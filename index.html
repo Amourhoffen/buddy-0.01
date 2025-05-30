@@ -1536,8 +1536,12 @@
 
         // --- Drag and Drop Logic (Unified for Mouse & Touch) ---
         let draggedElement = null;
+        let initialTouchX = 0;
+        let initialTouchY = 0;
         let initialTouchOffsetX = 0;
         let initialTouchOffsetY = 0;
+        let isTouchDragging = false; // Flag to indicate if a touch is being interpreted as a drag
+        const DRAG_THRESHOLD = 10; // Pixels a touch must move to be considered a drag
         let currentDropTarget = null; // To track the element currently being hovered/touched over
 
         // Mouse Drag Start
@@ -1558,18 +1562,15 @@
             const touch = event.touches[0];
             const rect = draggedElement.getBoundingClientRect();
 
+            // Store initial touch position
+            initialTouchX = touch.clientX;
+            initialTouchY = touch.clientY;
+
             // Calculate offset from top-left of element to touch point
             initialTouchOffsetX = touch.clientX - rect.left;
             initialTouchOffsetY = touch.clientY - rect.top;
 
-            // Position the element for dragging
-            draggedElement.style.position = 'fixed';
-            draggedElement.style.zIndex = '1000';
-            draggedElement.style.width = `${rect.width}px`; // Maintain original width
-            draggedElement.style.height = `${rect.height}px`; // Maintain original height
-            draggedElement.style.left = `${touch.clientX - initialTouchOffsetX}px`;
-            draggedElement.style.top = `${touch.clientY - initialTouchOffsetY}px`;
-            draggedElement.classList.add('touch-dragging');
+            isTouchDragging = false; // Reset drag flag at the start of a new touch
 
             // Add global touchmove and touchend listeners
             document.addEventListener('touchmove', touchMove, { passive: false });
@@ -1582,6 +1583,25 @@
             if (!draggedElement) return;
 
             const touch = event.touches[0];
+
+            // Check if touch has moved beyond threshold to confirm it's a drag
+            if (!isTouchDragging) {
+                const deltaX = Math.abs(touch.clientX - initialTouchX);
+                const deltaY = Math.abs(touch.clientY - initialTouchY);
+                if (deltaX > DRAG_THRESHOLD || deltaY > DRAG_THRESHOLD) {
+                    isTouchDragging = true;
+                    // Apply dragging styles only when drag is confirmed
+                    draggedElement.style.position = 'fixed';
+                    draggedElement.style.zIndex = '1000';
+                    draggedElement.style.width = `${draggedElement.getBoundingClientRect().width}px`; // Maintain original width
+                    draggedElement.style.height = `${draggedElement.getBoundingClientRect().height}px`; // Maintain original height
+                    draggedElement.classList.add('touch-dragging');
+                } else {
+                    return; // Not yet a drag, don't move element or check drop targets
+                }
+            }
+
+            // Move the dragged element
             draggedElement.style.left = `${touch.clientX - initialTouchOffsetX}px`;
             draggedElement.style.top = `${touch.clientY - initialTouchOffsetY}px`;
 
@@ -1626,22 +1646,29 @@
             document.removeEventListener('touchmove', touchMove);
             document.removeEventListener('touchend', touchEnd);
 
-            // Get the element at the final drop position
-            draggedElement.style.pointerEvents = 'none'; // Temporarily hide dragged element
-            const finalDropElement = document.elementFromPoint(event.changedTouches[0].clientX, event.changedTouches[0].clientY);
-            draggedElement.style.pointerEvents = 'auto'; // Restore pointer events
+            // If it was a tap (not a drag), trigger a click
+            if (!isTouchDragging) {
+                // Manually dispatch a click event to trigger the onclick handler
+                draggedElement.click();
+            } else {
+                // If it was a drag, perform the drop logic
+                // Get the element at the final drop position
+                draggedElement.style.pointerEvents = 'none'; // Temporarily hide dragged element
+                const finalDropElement = document.elementFromPoint(event.changedTouches[0].clientX, event.changedTouches[0].clientY);
+                draggedElement.style.pointerEvents = 'auto'; // Restore pointer events
 
-            // Call the unified drop handler
-            handleDrop({
-                target: finalDropElement,
-                dataTransfer: {
-                    getData: (type) => {
-                        if (type === 'text/plain') return draggedElement.dataset.id;
-                        if (type === 'text/dragged-type') return draggedElement.dataset.type;
-                        return null;
+                // Call the unified drop handler
+                handleDrop({
+                    target: finalDropElement,
+                    dataTransfer: {
+                        getData: (type) => {
+                            if (type === 'text/plain') return draggedElement.dataset.id;
+                            if (type === 'text/dragged-type') return draggedElement.dataset.type;
+                            return null;
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // Clean up dragged element styles and classes
             draggedElement.classList.remove('dragging', 'touch-dragging');
@@ -1652,11 +1679,13 @@
             draggedElement.style.left = '';
             draggedElement.style.top = '';
             draggedElement = null;
+            isTouchDragging = false; // Reset drag flag
 
             // Clean up drag-over classes from all potential targets
             document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
             currentDropTarget = null;
         }
+
 
         // Allow Drop (for mouse dragover)
         function allowDrop(event) {
@@ -3577,7 +3606,14 @@
             taskElement.ondragstart = drag;
             taskElement.ontouchstart = touchStart;
 
+            // Unified click handler for both mouse and touch (triggered by touchend for taps)
             taskElement.onclick = (e) => {
+                // Prevent click if it was part of a touch-drag gesture
+                if (isTouchDragging) {
+                    e.preventDefault(); // Stop default click behavior
+                    e.stopPropagation(); // Stop event from bubbling up
+                    return;
+                }
                 // Only toggle completion if the click is not on the delete button itself
                 if (!e.target.classList.contains('delete-btn') && !e.target.closest('.delete-btn')) {
                     toggleTaskComplete(id, type);
