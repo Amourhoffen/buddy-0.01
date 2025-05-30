@@ -265,7 +265,15 @@
             color: var(--text-light);
             font-size: 1rem;
             transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+            margin-bottom: 1rem; /* Added margin-bottom for spacing */
         }
+        /* Remove margin-bottom for elements specifically handled by flex/grid gap or other specific margins */
+        .flex > input[type="text"], .flex > select, .flex > input[type="number"],
+        .grid > input[type="text"], .grid > select, .grid > input[type="number"],
+        .flex > textarea, .grid > textarea {
+            margin-bottom: 0;
+        }
+
         select {
             appearance: none; /* Remove default dropdown arrow */
             background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%23a0aec0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-5.6H18.6a17.6%2017.6%200%200%200-13.2%205.6%2017.6%2017.6%200%200%200%200%2023.2l128%20128c4.4%204.4%2010.6%206.6%2016.8%206.6s12.4-2.2%2016.8-6.6l128-128c4.4-4.4%204.4-10.6%200-15z%22%2F%3E%3C%2Fsvg%3E');
@@ -760,12 +768,19 @@
             padding: 0.3rem 0.6rem;
             border-radius: 0.3rem;
             font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            /* Remove fixed width/overflow properties here, let flexbox handle it */
             max-width: 100%;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            position: relative; /* For delete button */
+            display: flex; /* Make it a flex container */
+            align-items: center; /* Vertically center items */
+            justify-content: space-between; /* Push text and button apart */
+            gap: 0.5rem; /* Space between text and button */
+        }
+        .planner-task-item .task-text { /* New class for the text content */
+            flex-grow: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .planner-task-item.completed {
             background-color: var(--success-color);
@@ -782,12 +797,14 @@
             color: white;
             cursor: pointer;
             font-size: 0.8rem;
-            position: absolute;
-            right: 5px;
-            top: 50%;
-            transform: translateY(-50%);
-            opacity: 0.7;
-            transition: opacity 0.2s ease;
+            /* Remove absolute positioning */
+            position: static;
+            transform: none;
+            top: auto;
+            right: auto;
+            flex-shrink: 0; /* Prevent button from shrinking */
+            margin-left: auto; /* Push button to the right */
+            padding: 0; /* Remove default button padding */
         }
         .planner-task-item .delete-btn:hover {
             opacity: 1;
@@ -856,6 +873,16 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             transition: background-color 0.2s ease;
             position: relative; /* For delete button */
+            display: flex; /* Make it a flex container */
+            align-items: center; /* Vertically center items */
+            justify-content: space-between; /* Push text and button apart */
+            gap: 0.5rem; /* Space between text and button */
+        }
+        .eisenhower-task .task-text { /* New class for the text content */
+            flex-grow: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .eisenhower-task.completed {
             background-color: var(--success-color);
@@ -872,12 +899,15 @@
             color: white;
             cursor: pointer;
             font-size: 0.8rem;
-            position: absolute;
-            right: 5px;
-            top: 50%;
-            transform: translateY(-50%);
+            position: static; /* Remove absolute positioning */
+            transform: none;
+            right: auto;
+            top: auto;
             opacity: 0.7;
             transition: opacity 0.2s ease;
+            flex-shrink: 0; /* Prevent button from shrinking */
+            margin-left: auto; /* Push button to the right */
+            padding: 0; /* Remove default button padding */
         }
         .eisenhower-task .delete-btn:hover {
             opacity: 1;
@@ -1014,6 +1044,7 @@
         .modal-body textarea {
             min-height: 80px;
             resize: vertical;
+            margin-bottom: 1rem; /* Added margin-bottom */
         }
         .emoji-scale {
             display: flex;
@@ -1235,10 +1266,10 @@
             <div class="card-section">
                 <h3 class="section-subtitle">Add New Exam</h3>
                 <label for="exam-name-input" class="block text-sm font-medium text-gray-400 mb-1">Exam Name:</label>
-                <input type="text" id="exam-name-input" placeholder="e.g., Math Finals" class="form-input mb-2">
+                <input type="text" id="exam-name-input" placeholder="e.g., Math Finals" class="form-input">
                 <label for="exam-date-input" class="block text-sm font-medium text-gray-400 mb-1">Exam Date:</label>
-                <input type="date" id="exam-date-input" class="form-input mb-4">
-                <button id="add-exam-btn" class="btn w-full">Add Exam</button>
+                <input type="date" id="exam-date-input" class="form-input">
+                <button id="add-exam-btn" class="btn w-full mt-4">Add Exam</button>
             </div>
 
             <div class="card-section">
@@ -1253,8 +1284,8 @@
             <div class="card-section">
                 <h3 class="section-subtitle">Study Topics Checklist</h3>
                 <label for="topic-name-input" class="block text-sm font-medium text-gray-400 mb-1">Topic Name:</label>
-                <input type="text" id="topic-name-input" placeholder="e.g., Algebra Basics" class="form-input mb-2">
-                <button id="add-topic-btn" class="btn w-full mb-4">Add Topic</button>
+                <input type="text" id="topic-name-input" placeholder="e.g., Algebra Basics" class="form-input">
+                <button id="add-topic-btn" class="btn w-full mt-4 mb-4">Add Topic</button>
                 <div id="topics-list" class="space-y-2">
                     <p class="text-gray-400">No topics added yet.</p>
                 </div>
@@ -1297,10 +1328,10 @@
             <div class="card-section">
                 <h3 class="section-subtitle">Bookmark Important Events</h3>
                 <label for="bookmark-name-input" class="block text-sm font-medium text-gray-400 mb-1">Event Name:</label>
-                <input type="text" id="bookmark-name-input" placeholder="e.g., Admission Form Deadline" class="form-input mb-2">
+                <input type="text" id="bookmark-name-input" placeholder="e.g., Admission Form Deadline" class="form-input">
                 <label for="bookmark-date-input" class="block text-sm font-medium text-gray-400 mb-1">Event Date:</label>
-                <input type="date" id="bookmark-date-input" class="form-input mb-4">
-                <button id="add-bookmark-btn" class="btn w-full">Add Bookmark</button>
+                <input type="date" id="bookmark-date-input" class="form-input">
+                <button id="add-bookmark-btn" class="btn w-full mt-4">Add Bookmark</button>
             </div>
 
             <div class="card-section">
@@ -1357,7 +1388,7 @@
                     <label for="study-hours-input" class="block text-sm font-medium text-gray-400 mb-1">Hours Studied Today:</label>
                     <input type="number" id="study-hours-input" min="0" step="0.1" placeholder="e.g., 2.5" class="form-input">
                 </div>
-                <button id="log-study-hours-btn" class="btn w-full mb-4">Log Hours</button>
+                <button id="log-study-hours-btn" class="btn w-full mt-4 mb-4">Log Hours</button>
 
                 <div id="motivational-message" class="message-box success hidden mb-4"></div>
 
@@ -1405,7 +1436,7 @@
                             </div>
                         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-r-[10px] border-b-[20px] border-l-transparent border-r-transparent border-b-red-500 z-10 pointer-events-none"></div>
                     </div>
-                    <button id="spin-button" class="btn w-full">Spin to Study!</button>
+                    <button id="spin-button" class="btn w-full mt-4">Spin to Study!</button>
                     <p id="selected-topic-display" class="text-lg font-semibold text-primary-color hidden">You should study: <span class="font-bold text-white"></span></p>
                 </div>
             </div>
@@ -1827,7 +1858,7 @@
 
                 // If dragging from planner to matrix, create a new matrix task
                 if (draggedType === 'planner' || draggedType === 'unassigned-planner') {
-                    const taskText = draggedElement.textContent.replace(/[\u{1F5D1}\u{FE0F}]/gu, '').trim();
+                    const taskText = draggedElement.querySelector('.task-text').textContent; // Get text from the span
                     const newTask = {
                         id: generateUniqueId(),
                         text: taskText,
@@ -3701,7 +3732,12 @@
             if (completed) {
                 taskElement.classList.add('completed');
             }
-            taskElement.textContent = text;
+            // Create a span for the text content to allow for ellipsis and flex-grow
+            const textSpan = document.createElement('span');
+            textSpan.classList.add('task-text');
+            textSpan.textContent = text;
+            taskElement.appendChild(textSpan);
+
             taskElement.setAttribute('draggable', 'true');
             taskElement.setAttribute('data-id', id);
             taskElement.setAttribute('data-type', type); // 'planner', 'unassigned-planner', or 'matrix'
