@@ -848,11 +848,11 @@
             margin-bottom: 0.5rem;
         }
         .eisenhower-task {
+            cursor: grab;
             background-color: var(--secondary-color);
             color: white;
             padding: 0.5rem;
             border-radius: 0.3rem;
-            cursor: grab;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             transition: background-color 0.2s ease;
             position: relative; /* For delete button */
@@ -1040,6 +1040,16 @@
             justify-content: flex-end;
             gap: 1rem;
             margin-top: 1.5rem;
+        }
+
+        /* New CSS for touch dragging */
+        .touch-dragging {
+            position: fixed;
+            z-index: 1000; /* Ensure it's on top */
+            pointer-events: none; /* Allow elementFromPoint to see through it */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            transform: scale(1.05); /* Slightly enlarge while dragging */
+            transition: none; /* No transition during active drag */
         }
 
 
@@ -1516,6 +1526,268 @@
                 }, 5000);
             }
         }
+
+        /**
+         * Generates a unique ID.
+         */
+        function generateUniqueId() {
+            return '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // --- Drag and Drop Logic (Unified for Mouse & Touch) ---
+        let draggedElement = null;
+        let initialTouchOffsetX = 0;
+        let initialTouchOffsetY = 0;
+        let currentDropTarget = null; // To track the element currently being hovered/touched over
+
+        // Mouse Drag Start
+        function drag(event) {
+            draggedElement = event.target;
+            event.dataTransfer.setData('text/plain', draggedElement.dataset.id);
+            event.dataTransfer.setData('text/dragged-type', draggedElement.dataset.type);
+            event.dataTransfer.effectAllowed = 'move';
+            draggedElement.classList.add('dragging');
+        }
+
+        // Touch Drag Start
+        function touchStart(event) {
+            draggedElement = event.target;
+            // Prevent default scrolling/zooming immediately
+            event.preventDefault();
+
+            const touch = event.touches[0];
+            const rect = draggedElement.getBoundingClientRect();
+
+            // Calculate offset from top-left of element to touch point
+            initialTouchOffsetX = touch.clientX - rect.left;
+            initialTouchOffsetY = touch.clientY - rect.top;
+
+            // Position the element for dragging
+            draggedElement.style.position = 'fixed';
+            draggedElement.style.zIndex = '1000';
+            draggedElement.style.width = `${rect.width}px`; // Maintain original width
+            draggedElement.style.height = `${rect.height}px`; // Maintain original height
+            draggedElement.style.left = `${touch.clientX - initialTouchOffsetX}px`;
+            draggedElement.style.top = `${touch.clientY - initialTouchOffsetY}px`;
+            draggedElement.classList.add('touch-dragging');
+
+            // Add global touchmove and touchend listeners
+            document.addEventListener('touchmove', touchMove, { passive: false });
+            document.addEventListener('touchend', touchEnd);
+        }
+
+        // Touch Drag Move
+        function touchMove(event) {
+            event.preventDefault(); // Prevent scrolling while dragging
+            if (!draggedElement) return;
+
+            const touch = event.touches[0];
+            draggedElement.style.left = `${touch.clientX - initialTouchOffsetX}px`;
+            draggedElement.style.top = `${touch.clientY - initialTouchOffsetY}px`;
+
+            // Identify element under the touch
+            draggedElement.style.pointerEvents = 'none'; // Temporarily hide dragged element for elementFromPoint
+            const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
+            draggedElement.style.pointerEvents = 'auto'; // Restore pointer events
+
+            // Remove drag-over from previous target
+            if (currentDropTarget && currentDropTarget !== elementUnderTouch &&
+                (currentDropTarget.classList.contains('drag-over') || currentDropTarget.closest('.drag-over'))) {
+                currentDropTarget.classList.remove('drag-over');
+                if (currentDropTarget.closest('.eisenhower-quadrant')) {
+                    currentDropTarget.closest('.eisenhower-quadrant').classList.remove('drag-over');
+                }
+                if (currentDropTarget.closest('.planner-task-display')) {
+                    currentDropTarget.closest('.planner-task-display').classList.remove('drag-over');
+                }
+            }
+
+            // Add drag-over to new target
+            if (elementUnderTouch) {
+                const potentialQuadrant = elementUnderTouch.closest('.eisenhower-quadrant');
+                const potentialPlannerSlot = elementUnderTouch.closest('.planner-task-display');
+
+                if (potentialQuadrant) {
+                    potentialQuadrant.classList.add('drag-over');
+                    currentDropTarget = potentialQuadrant;
+                } else if (potentialPlannerSlot) {
+                    potentialPlannerSlot.classList.add('drag-over');
+                    currentDropTarget = potentialPlannerSlot;
+                } else {
+                    currentDropTarget = null; // No valid drop target
+                }
+            }
+        }
+
+        // Touch Drag End
+        function touchEnd(event) {
+            if (!draggedElement) return;
+
+            document.removeEventListener('touchmove', touchMove);
+            document.removeEventListener('touchend', touchEnd);
+
+            // Get the element at the final drop position
+            draggedElement.style.pointerEvents = 'none'; // Temporarily hide dragged element
+            const finalDropElement = document.elementFromPoint(event.changedTouches[0].clientX, event.changedTouches[0].clientY);
+            draggedElement.style.pointerEvents = 'auto'; // Restore pointer events
+
+            // Call the unified drop handler
+            handleDrop({
+                target: finalDropElement,
+                dataTransfer: {
+                    getData: (type) => {
+                        if (type === 'text/plain') return draggedElement.dataset.id;
+                        if (type === 'text/dragged-type') return draggedElement.dataset.type;
+                        return null;
+                    }
+                }
+            });
+
+            // Clean up dragged element styles and classes
+            draggedElement.classList.remove('dragging', 'touch-dragging');
+            draggedElement.style.position = '';
+            draggedElement.style.zIndex = '';
+            draggedElement.style.width = '';
+            draggedElement.style.height = '';
+            draggedElement.style.left = '';
+            draggedElement.style.top = '';
+            draggedElement = null;
+
+            // Clean up drag-over classes from all potential targets
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            currentDropTarget = null;
+        }
+
+        // Allow Drop (for mouse dragover)
+        function allowDrop(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            if (event.target.classList.contains('eisenhower-quadrant')) {
+                event.target.classList.add('drag-over');
+            } else if (event.target.classList.contains('planner-task-display')) {
+                event.target.classList.add('drag-over');
+            }
+        }
+
+        // Leave Drop (for mouse dragleave)
+        function leaveDrop(event) {
+            if (event.target.classList.contains('eisenhower-quadrant')) {
+                event.target.classList.remove('drag-over');
+            } else if (event.target.classList.contains('planner-task-display')) {
+                event.target.classList.remove('drag-over');
+            }
+        }
+
+        // Unified Drop Handler (called by both mouse `ondrop` and `touchEnd`)
+        function handleDrop(event) {
+            const taskId = event.dataTransfer.getData('text/plain');
+            const draggedType = event.dataTransfer.getData('text/dragged-type');
+            const targetElement = event.target.closest('.eisenhower-quadrant') || event.target.closest('.planner-task-display');
+
+            if (!draggedElement || !targetElement) {
+                // If no valid target or element was being dragged, just clean up
+                if (draggedElement) draggedElement.classList.remove('dragging', 'touch-dragging');
+                document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+                return;
+            }
+
+            // Determine if it's a planner drop or matrix drop
+            if (targetElement.classList.contains('planner-task-display')) {
+                const newSlotId = targetElement.parentElement.dataset.hourSlot;
+
+                // Check if the slot already has a task
+                if (dailyPlannerData.plannerTasks[newSlotId]) {
+                    showMessage(plannerMessage, 'error', 'This time slot is already occupied. Clear it first.', true);
+                    draggedElement.classList.remove('dragging', 'touch-dragging');
+                    targetElement.classList.remove('drag-over');
+                    return;
+                }
+
+                let taskToMove = null;
+
+                // Find the task in its original location and remove it
+                if (draggedType === 'planner') {
+                    for (const slot in dailyPlannerData.plannerTasks) {
+                        if (dailyPlannerData.plannerTasks[slot].id === taskId) {
+                            taskToMove = dailyPlannerData.plannerTasks[slot];
+                            delete dailyPlannerData.plannerTasks[slot];
+                            break;
+                        }
+                    }
+                } else if (draggedType === 'unassigned-planner') {
+                    const index = dailyPlannerData.unassignedPlannerTasks.findIndex(t => t.id === taskId);
+                    if (index > -1) {
+                        taskToMove = dailyPlannerData.unassignedPlannerTasks[index];
+                        dailyPlannerData.unassignedPlannerTasks.splice(index, 1);
+                    }
+                } else if (draggedType === 'matrix') {
+                    const index = dailyPlannerData.matrixTasks.findIndex(t => t.id === taskId);
+                    if (index > -1) {
+                        taskToMove = dailyPlannerData.matrixTasks[index];
+                        // When moving from matrix to planner, remove it from matrix to avoid duplicates
+                        dailyPlannerData.matrixTasks.splice(index, 1);
+                    }
+                }
+
+                if (taskToMove) {
+                    dailyPlannerData.plannerTasks[newSlotId] = {
+                        id: taskToMove.id,
+                        text: taskToMove.text,
+                        completed: taskToMove.completed,
+                        awardedCoins: taskToMove.awardedCoins
+                    };
+                    saveDailyPlannerData();
+                    renderDailyPlanner();
+                    renderUnassignedPlannerTasks();
+                    renderEisenhowerMatrix();
+                    showMessage(plannerMessage, 'success', `Task "${taskToMove.text}" scheduled for ${targetElement.parentElement.querySelector('.planner-time-label').textContent}!`, true);
+                }
+            } else if (targetElement.classList.contains('eisenhower-quadrant')) {
+                const newQuadrantId = targetElement.dataset.quadrant;
+
+                // If dragging from planner to matrix, create a new matrix task
+                if (draggedType === 'planner' || draggedType === 'unassigned-planner') {
+                    const taskText = draggedElement.textContent.replace(/[\u{1F5D1}\u{FE0F}]/gu, '').trim();
+                    const newTask = {
+                        id: generateUniqueId(),
+                        text: taskText,
+                        quadrant: newQuadrantId,
+                        completed: false,
+                        awardedCoins: false
+                    };
+                    dailyPlannerData.matrixTasks.push(newTask);
+                    // Remove from original list
+                    if (draggedType === 'planner') {
+                        for (const slotId in dailyPlannerData.plannerTasks) {
+                            if (dailyPlannerData.plannerTasks[slotId].id === taskId) {
+                                delete dailyPlannerData.plannerTasks[slotId];
+                                break;
+                            }
+                        }
+                        renderDailyPlanner();
+                    } else if (draggedType === 'unassigned-planner') {
+                        dailyPlannerData.unassignedPlannerTasks = dailyPlannerData.unassignedPlannerTasks.filter(task => task.id !== taskId);
+                        renderUnassignedPlannerTasks();
+                    }
+                    showMessage(matrixMessage, 'success', `Task "${taskText}" moved to "${newQuadrantId}" quadrant!`, true);
+
+                } else if (draggedType === 'matrix') {
+                    // If dragging within matrix or from matrix to matrix
+                    const taskIndex = dailyPlannerData.matrixTasks.findIndex(t => t.id === taskId);
+                    if (taskIndex > -1) {
+                        dailyPlannerData.matrixTasks[taskIndex].quadrant = newQuadrantId;
+                        showMessage(matrixMessage, 'success', 'Task moved successfully!', true);
+                    }
+                }
+                saveDailyPlannerData();
+                renderEisenhowerMatrix();
+            }
+            // Clean up
+            if (draggedElement) draggedElement.classList.remove('dragging', 'touch-dragging');
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            draggedElement = null; // Clear dragged element after drop
+        }
+
 
         // --- Dashboard Navigation Logic ---
         const navFocusMoodBtn = document.getElementById('nav-focus-mood-btn');
@@ -2008,13 +2280,6 @@
          */
         function saveExamPrepData() {
             localStorage.setItem('examPrepData', JSON.stringify(examPrepData));
-        }
-
-        /**
-         * Generates a unique ID.
-         */
-        function generateUniqueId() {
-            return '_' + Math.random().toString(36).substr(2, 9);
         }
 
         // --- Exams Logic ---
@@ -3194,7 +3459,7 @@
                 timeSlotDiv.classList.add('planner-time-slot');
                 timeSlotDiv.setAttribute('data-hour-slot', slotId);
                 timeSlotDiv.ondragover = allowDrop;
-                timeSlotDiv.ondrop = dropPlannerTask;
+                timeSlotDiv.ondrop = handleDrop; // Use unified handleDrop
                 timeSlotDiv.ondragleave = leaveDrop; // Add drag leave for visual feedback
 
                 const labelSpan = document.createElement('span');
@@ -3308,10 +3573,14 @@
             taskElement.setAttribute('data-id', id);
             taskElement.setAttribute('data-type', type); // 'planner', 'unassigned-planner', or 'matrix'
 
+            // Add both mouse and touch listeners
             taskElement.ondragstart = drag;
+            taskElement.ontouchstart = touchStart;
+
             taskElement.onclick = (e) => {
+                // Only toggle completion if the click is not on the delete button itself
                 if (!e.target.classList.contains('delete-btn') && !e.target.closest('.delete-btn')) {
-                    toggleTaskComplete(id, type); // Toggle completion on click, but not on delete button
+                    toggleTaskComplete(id, type);
                 }
             };
 
@@ -3395,153 +3664,13 @@
             saveDailyPlannerData();
         }
 
-
-        // --- Drag and Drop Logic ---
-        let draggedElement = null;
-
-        function drag(event) {
-            draggedElement = event.target;
-            event.dataTransfer.setData('text/plain', draggedElement.dataset.id);
-            event.dataTransfer.setData('text/dragged-type', draggedElement.dataset.type); // Store original type
-            event.dataTransfer.effectAllowed = 'move';
-            draggedElement.classList.add('dragging');
-        }
-
-        function allowDrop(event) {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = 'move';
-            if (event.target.classList.contains('eisenhower-quadrant')) {
-                event.target.classList.add('drag-over');
-            } else if (event.target.classList.contains('planner-task-display')) {
-                event.target.classList.add('drag-over');
-            }
-        }
-
-        function leaveDrop(event) {
-            if (event.target.classList.contains('eisenhower-quadrant')) {
-                event.target.classList.remove('drag-over');
-            } else if (event.target.classList.contains('planner-task-display')) {
-                event.target.classList.remove('drag-over');
-            }
-        }
-
-        function dropEisenhowerTask(event) {
-            event.preventDefault();
-            const taskId = event.dataTransfer.getData('text/plain');
-            const draggedType = event.dataTransfer.getData('text/dragged-type');
-            const targetQuadrantElement = event.target.closest('.eisenhower-quadrant');
-
-            if (draggedElement && targetQuadrantElement) {
-                const newQuadrantId = targetQuadrantElement.dataset.quadrant;
-
-                // If dragging from planner to matrix, create a new matrix task
-                if (draggedType === 'planner' || draggedType === 'unassigned-planner') {
-                    const taskText = draggedElement.textContent.replace(/[\u{1F5D1}\u{FE0F}]/gu, '').trim(); // Remove trash icon and trim
-                    const newTask = {
-                        id: generateUniqueId(), // New ID for matrix task
-                        text: taskText,
-                        quadrant: newQuadrantId,
-                        completed: false,
-                        awardedCoins: false
-                    };
-                    dailyPlannerData.matrixTasks.push(newTask);
-                    // Remove from original list
-                    if (draggedType === 'planner') {
-                        for (const slotId in dailyPlannerData.plannerTasks) {
-                            if (dailyPlannerData.plannerTasks[slotId].id === taskId) {
-                                delete dailyPlannerData.plannerTasks[slotId];
-                                break;
-                            }
-                        }
-                        renderDailyPlanner();
-                    } else if (draggedType === 'unassigned-planner') {
-                        dailyPlannerData.unassignedPlannerTasks = dailyPlannerData.unassignedPlannerTasks.filter(task => task.id !== taskId);
-                        renderUnassignedPlannerTasks();
-                    }
-                    showMessage(matrixMessage, 'success', `Task "${taskText}" moved to "${newQuadrantId}" quadrant!`, true);
-
-                } else if (draggedType === 'matrix') {
-                    // If dragging within matrix or from matrix to matrix
-                    const taskIndex = dailyPlannerData.matrixTasks.findIndex(t => t.id === taskId);
-                    if (taskIndex > -1) {
-                        dailyPlannerData.matrixTasks[taskIndex].quadrant = newQuadrantId;
-                        showMessage(matrixMessage, 'success', 'Task moved successfully!', true);
-                    }
-                }
-                saveDailyPlannerData();
-                renderEisenhowerMatrix(); // Re-render to reflect changes
-            }
-            if (draggedElement) draggedElement.classList.remove('dragging');
-            if (targetQuadrantElement) targetQuadrantElement.classList.remove('drag-over');
-        }
-
-        function dropPlannerTask(event) {
-            event.preventDefault();
-            const taskId = event.dataTransfer.getData('text/plain');
-            const draggedType = event.dataTransfer.getData('text/dragged-type');
-            const targetSlotDisplay = event.target.closest('.planner-task-display');
-
-            if (draggedElement && targetSlotDisplay) {
-                const newSlotId = targetSlotDisplay.parentElement.dataset.hourSlot;
-
-                // Check if the slot already has a task
-                if (dailyPlannerData.plannerTasks[newSlotId]) {
-                    showMessage(plannerMessage, 'error', 'This time slot is already occupied. Clear it first.', true);
-                    if (draggedElement) draggedElement.classList.remove('dragging');
-                    if (targetSlotDisplay) targetSlotDisplay.classList.remove('drag-over');
-                    return;
-                }
-
-                let taskToMove = null;
-
-                // Remove task from its original location in plannerData if it was there
-                if (draggedType === 'planner') {
-                    for (const slot in dailyPlannerData.plannerTasks) {
-                        if (dailyPlannerData.plannerTasks[slot].id === taskId) {
-                            taskToMove = dailyPlannerData.plannerTasks[slot];
-                            delete dailyPlannerData.plannerTasks[slot];
-                            break;
-                        }
-                    }
-                } else if (draggedType === 'unassigned-planner') {
-                    const index = dailyPlannerData.unassignedPlannerTasks.findIndex(t => t.id === taskId);
-                    if (index > -1) {
-                        taskToMove = dailyPlannerData.unassignedPlannerTasks[index];
-                        dailyPlannerData.unassignedPlannerTasks.splice(index, 1);
-                    }
-                } else if (draggedType === 'matrix') {
-                    const index = dailyPlannerData.matrixTasks.findIndex(t => t.id === taskId);
-                    if (index > -1) {
-                        taskToMove = dailyPlannerData.matrixTasks[index];
-                        // When moving from matrix to planner, remove it from matrix to avoid duplicates
-                        dailyPlannerData.matrixTasks.splice(index, 1);
-                    }
-                }
-
-                if (taskToMove) {
-                    dailyPlannerData.plannerTasks[newSlotId] = {
-                        id: taskToMove.id,
-                        text: taskToMove.text,
-                        completed: taskToMove.completed,
-                        awardedCoins: taskToMove.awardedCoins
-                    };
-                    saveDailyPlannerData();
-                    renderDailyPlanner(); // Re-render planner to show updated task
-                    renderUnassignedPlannerTasks(); // Re-render unassigned list
-                    renderEisenhowerMatrix(); // Re-render matrix to show task if it was moved from there
-                    showMessage(plannerMessage, 'success', `Task "${taskToMove.text}" scheduled for ${targetSlotDisplay.parentElement.querySelector('.planner-time-label').textContent}!`, true);
-                }
-            }
-            if (draggedElement) draggedElement.classList.remove('dragging');
-            if (targetSlotDisplay) targetSlotDisplay.classList.remove('drag-over');
-        }
-
         // Add drag/drop event listeners to quadrants
         Object.values(quadrants).forEach(quadrant => {
             quadrant.ondragover = allowDrop;
             quadrant.ondragleave = leaveDrop;
-            quadrant.ondrop = dropEisenhowerTask;
+            quadrant.ondrop = handleDrop; // Use unified handleDrop
         });
+
 
         // --- Reward Shop Logic ---
         function renderRewardShop() {
