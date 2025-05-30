@@ -1052,6 +1052,36 @@
             transition: none; /* No transition during active drag */
         }
 
+        /* Style for subject list in study tracker */
+        .subject-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-light);
+            font-weight: 500;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+        .subject-list-item:last-child {
+            margin-bottom: 0;
+        }
+        .subject-list-item .delete-btn {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+        .subject-list-item .delete-btn:hover {
+            color: #ff0000;
+            transform: scale(1.1);
+        }
+
 
         /* Responsive Adjustments */
         @media (min-width: 768px) {
@@ -1309,6 +1339,14 @@
                         <button id="add-subject-btn" class="btn btn-secondary px-4 py-2 text-sm">Add</button>
                     </div>
                 </div>
+
+                <div class="mt-4 mb-4">
+                    <h4 class="text-md font-semibold text-gray-300 mb-2">Your Subjects:</h4>
+                    <div id="subject-management-list" class="space-y-2 custom-scrollbar" style="max-height: 150px; overflow-y: auto;">
+                        <p class="text-gray-400 text-sm">No subjects added yet.</p>
+                    </div>
+                </div>
+
                 <div class="mb-4">
                     <label for="study-subject-select" class="block text-sm font-medium text-gray-400 mb-1">Select Subject:</label>
                     <select id="study-subject-select" class="form-input">
@@ -1494,6 +1532,19 @@
             </div>
             <div class="modal-footer">
                 <button id="submit-reflection-btn" class="btn">Submit Reflection</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmation-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="modal-title">Confirm Deletion</h2>
+            <div class="modal-body">
+                <p id="confirmation-message" class="text-center text-lg mb-6">Are you sure you want to proceed?</p>
+            </div>
+            <div class="modal-footer justify-center">
+                <button id="confirm-yes-btn" class="btn btn-secondary">Yes</button>
+                <button id="confirm-no-btn" class="btn">No</button>
             </div>
         </div>
     </div>
@@ -1859,6 +1910,7 @@
                 }
                 updateStudyChart(7); // Always update with 7 days
                 renderSpinnerTopics();
+                renderSubjectManagementList(); // NEW: Render the subject management list
             } else if (dashboardId === 'daily-planner-view') { // NEW: Daily Planner logic
                 dailyPlannerView.classList.remove('hidden');
                 navDailyPlannerBtn.classList.add('active');
@@ -2854,6 +2906,7 @@
         const studyProgressChartCanvas = document.getElementById('study-progress-chart');
         const studyLogList = document.getElementById('study-log'); // Added for study log list
         const timeRangeButtons = document.querySelectorAll('.time-range-btn'); // Still select all, but only '7D' will be in HTML
+        const subjectManagementList = document.getElementById('subject-management-list'); // NEW: Subject management list container
 
         // New elements for chart toggle
         const toggleStudyChartBtn = document.getElementById('toggle-study-chart-btn');
@@ -2897,7 +2950,6 @@
                 logStudyHoursBtn.disabled = true;
                 studyHoursInput.disabled = true;
                 studySubjectSelect.disabled = true;
-                showMessage(motivationalMessage, 'info', 'Add a subject first to log hours!', true);
             } else {
                 logStudyHoursBtn.disabled = false;
                 studyHoursInput.disabled = false;
@@ -2912,12 +2964,64 @@
             });
         }
 
+        // NEW: Function to render the list of subjects with delete buttons
+        function renderSubjectManagementList() {
+            subjectManagementList.innerHTML = ''; // Clear existing entries
+            if (studyTrackerData.subjects.length === 0) {
+                subjectManagementList.innerHTML = '<p class="text-gray-400 text-sm">No subjects added yet.</p>';
+                return;
+            }
+
+            studyTrackerData.subjects.forEach(subject => {
+                const subjectDiv = document.createElement('div');
+                subjectDiv.classList.add('subject-list-item');
+                subjectDiv.setAttribute('data-id', subject.id);
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = subject.name;
+                subjectDiv.appendChild(nameSpan);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                deleteBtn.title = `Delete ${subject.name}`;
+                deleteBtn.addEventListener('click', () => {
+                    // Use custom confirmation modal
+                    showConfirmationModal(
+                        `Are you sure you want to delete "${subject.name}" and all its associated study logs?`,
+                        () => deleteSubjectConfirmed(subject.id, subject.name)
+                    );
+                });
+                subjectDiv.appendChild(deleteBtn);
+
+                subjectManagementList.appendChild(subjectDiv);
+            });
+        }
+
+        // NEW: Function to delete a subject (called after confirmation)
+        function deleteSubjectConfirmed(id, subjectName) {
+            // Remove subject
+            studyTrackerData.subjects = studyTrackerData.subjects.filter(s => s.id !== id);
+            // Remove associated study logs
+            studyTrackerData.studyLogs = studyTrackerData.studyLogs.filter(log => log.subjectId !== id);
+
+            saveStudyTrackerData();
+            renderSubjectsDropdown();
+            renderSubjectManagementList(); // NEW: Update the management list
+            updateStudyStats();
+            updateStudyChart(7); // Re-render chart with updated data
+            renderStudyLog(); // Re-render study log
+            showMessage(motivationalMessage, 'info', `Subject "${subjectName}" and its logs deleted.`, true);
+        }
+
+
         addSubjectBtn.addEventListener('click', () => {
             const subjectName = newSubjectInput.value.trim();
             if (subjectName && !studyTrackerData.subjects.some(s => s.name.toLowerCase() === subjectName.toLowerCase())) {
                 studyTrackerData.subjects.push({ id: generateUniqueId(), name: subjectName });
                 saveStudyTrackerData();
                 renderSubjectsDropdown();
+                renderSubjectManagementList(); // NEW: Update the management list
                 newSubjectInput.value = '';
                 showMessage(motivationalMessage, 'success', `Subject "${subjectName}" added!`, true);
             } else if (studyTrackerData.subjects.some(s => s.name.toLowerCase() === subjectName.toLowerCase())) {
@@ -3876,6 +3980,45 @@
             renderEisenhowerMatrix();
         });
 
+        // --- Custom Confirmation Modal Logic ---
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const confirmationMessage = document.getElementById('confirmation-message');
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        const confirmNoBtn = document.getElementById('confirm-no-btn');
+
+        let onConfirmCallback = null; // Stores the callback function for 'Yes'
+
+        /**
+         * Displays a custom confirmation modal.
+         * @param {string} message - The message to display in the modal.
+         * @param {Function} onConfirm - Callback function to execute if 'Yes' is clicked.
+         */
+        function showConfirmationModal(message, onConfirm) {
+            confirmationMessage.textContent = message;
+            onConfirmCallback = onConfirm;
+            confirmationModal.classList.add('show');
+        }
+
+        /**
+         * Hides the custom confirmation modal.
+         */
+        function hideConfirmationModal() {
+            confirmationModal.classList.remove('show');
+            onConfirmCallback = null; // Clear the callback
+        }
+
+        // Event listeners for the confirmation modal buttons
+        confirmYesBtn.addEventListener('click', () => {
+            if (onConfirmCallback) {
+                onConfirmCallback(); // Execute the stored callback
+            }
+            hideConfirmationModal();
+        });
+
+        confirmNoBtn.addEventListener('click', () => {
+            hideConfirmationModal(); // Just hide the modal
+        });
+
 
         // --- Initial Load & Render ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -3895,6 +4038,7 @@
             // Load and render Study Tracker data
             loadStudyTrackerData();
             renderSubjectsDropdown();
+            renderSubjectManagementList(); // NEW: Render the subject management list on initial load
             updateStudyStats();
             renderStudyLog(); // Initial render of study log list
 
