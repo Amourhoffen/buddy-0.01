@@ -1,0 +1,3754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus & Mood Booster Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom Properties for Theming - Dark Mode (Default) */
+        :root {
+            --primary-color: #6366f1; /* Indigo 500 */
+            --secondary-color: #a78bfa; /* Violet 400 */
+            --bg-dark: #1a202c; /* Dark charcoal */
+            --bg-card: #2d3748; /* Darker gray for cards */
+            --text-light: #e2e8f0; /* Light gray */
+            --text-muted: #a0aec0; /* Muted gray */
+            --border-color: #4a5568;
+            --box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 10px rgba(99, 102, 241, 0.1);
+            --success-color: #10b981; /* Emerald */
+            --warning-color: #f59e0b; /* Amber */
+            --danger-color: #ef4444; /* Red */
+        }
+
+        /* Light Mode Variables */
+        body.light-mode {
+            --primary-color: #4f46e5; /* Indigo 600 */
+            --secondary-color: #8b5cf6; /* Violet 500 */
+            --bg-dark: #f0f4f8; /* Light blue-gray */
+            --bg-card: #ffffff; /* White */
+            --text-light: #2d3748; /* Dark gray */
+            --text-muted: #718096; /* Medium gray */
+            --border-color: #cbd5e0; /* Light border */
+            --box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 0 10px rgba(79, 70, 229, 0.05);
+            --success-color: #059669; /* Darker Emerald */
+            --warning-color: #d97706; /* Darker Amber */
+            --danger-color: #dc2626; /* Darker Red */
+        }
+
+        /* Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column; /* Allow content and nav to stack */
+            align-items: center;
+            padding: 1.5rem;
+            padding-top: 6rem; /* Space for fixed nav bar */
+            overflow-y: auto; /* Allow scrolling if content overflows */
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth theme transition */
+        }
+
+        /* Main Navigation Bar */
+        #main-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            padding: 1rem;
+            background-color: var(--bg-card); /* Use card background for nav */
+            box-shadow: var(--box-shadow);
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        #main-nav .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden; /* For pseudo-element underline */
+        }
+        #main-nav .nav-btn:hover {
+            color: var(--text-light);
+            background-color: rgba(99, 102, 241, 0.1); /* Subtle hover effect */
+        }
+        #main-nav .nav-btn.active {
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+        #main-nav .nav-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 2px;
+            animation: slideIn 0.3s forwards;
+        }
+        @keyframes slideIn {
+            from { width: 0%; }
+            to { width: 100%; }
+        }
+
+
+        .dashboard-container {
+            background-color: var(--bg-card);
+            border-radius: 0.75rem;
+            box-shadow: var(--box-shadow);
+            padding: 2rem;
+            width: 100%;
+            max-width: 900px; /* Max width for desktop */
+            display: grid;
+            gap: 2rem; /* Increased gap for main sections */
+            grid-template-columns: 1fr; /* Single column on mobile */
+            border: 1px solid var(--border-color);
+            position: relative; /* For theme toggle positioning */
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.75rem;
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card {
+            background-color: var(--bg-dark);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Button Styles */
+        .btn {
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%); /* Maintain gradient */
+            filter: brightness(1.1); /* Slightly brighter on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+        }
+
+        .btn:disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            color: var(--text-muted);
+        }
+
+        .btn-secondary {
+            background-color: var(--border-color);
+            color: var(--text-light);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--text-muted);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Theme Toggle Button */
+        #theme-toggle-btn, .theme-toggle-btn-clone {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        #theme-toggle-btn:hover, .theme-toggle-btn-clone:hover {
+            background-color: var(--border-color);
+            transform: scale(1.05);
+        }
+        body.light-mode #theme-toggle-btn, body.light-mode .theme-toggle-btn-clone {
+            background-color: var(--bg-card);
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+
+        /* Timer Section */
+        #pomodoro-timer .timer-display {
+            font-size: 4rem;
+            font-weight: 800;
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+            transition: color 0.3s ease, text-shadow 0.3s ease;
+        }
+
+        #pomodoro-timer .timer-status {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            transition: color 0.3s ease;
+        }
+
+        #pomodoro-timer .timer-controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Select element styling */
+        select, input[type="text"], input[type="date"], input[type="number"], textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-light);
+            font-size: 1rem;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+        select {
+            appearance: none; /* Remove default dropdown arrow */
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%23a0aec0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-5.6H18.6a17.6%2017.6%200%200%200-13.2%205.6%2017.6%2017.6%200%200%200%200%2023.2l128%20128c4.4%204.4%2010.6%206.6%2016.8%206.6s12.4-2.2%2016.8-6.6l128-128c4.4-4.4%204.4-10.6%200-15z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 0.8rem auto;
+        }
+
+        select:focus, input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5);
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1); /* Makes the calendar icon white in dark mode */
+        }
+        body.light-mode input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0); /* Makes the calendar icon black in light mode */
+        }
+
+        /* Music Player Section */
+        #music-player .music-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+        }
+        #music-player .music-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        #youtube-embed-container {
+            width: 100%;
+            aspect-ratio: 16 / 9; /* Maintain aspect ratio for videos */
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        #youtube-embed-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Mood Booster Section */
+        #mood-booster select {
+            width: 100%;
+            margin-bottom: 1.5rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-light);
+            font-size: 1rem;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%23a0aec0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-5.6H18.6a17.6%2017.6%200%200%200-13.2%205.6%2017.6%2017.6%200%200%200%200%2023.2l128%20128c4.4%204.4%2010.6%206.6%2016.8%206.6s12.4-2.2%2016.8-6.6l128-128c4.4-4.4%204.4-10.6%200-15z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 0.8rem auto;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+        #mood-booster select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5);
+        }
+
+        #mood-output {
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-style: italic;
+            color: var(--text-muted);
+            text-align: center;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+
+        .message-box {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            font-weight: 500;
+            text-align: left;
+            border: 1px solid transparent;
+            width: 100%;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        /* Dark Mode Message Box Styles */
+        .message-box.info {
+            background-color: #34495e;
+            color: var(--text-light);
+            border-color: #5dade2;
+        }
+        .message-box.success {
+            background-color: #1a5242;
+            color: var(--text-light);
+            border-color: var(--success-color);
+        }
+        .message-box.error {
+            background-color: #641e1e;
+            color: var(--text-light);
+            border-color: var(--danger-color);
+        }
+
+        /* Light Mode Message Box Styles */
+        body.light-mode .message-box.info {
+            background-color: #e0f2fe; /* Light blue */
+            color: #2c5282; /* Darker blue text */
+            border-color: #90cdf4; /* Medium blue border */
+        }
+        body.light-mode .message-box.success {
+            background-color: #d1fae5; /* Light green */
+            color: #065f46; /* Dark green text */
+            border-color: #6ee7b7; /* Medium green border */
+        }
+        body.light-mode .message-box.error {
+            background-color: #fee2e2; /* Light red */
+            color: #991b1b; /* Dark red text */
+            border-color: #fca5a5; /* Medium red border */
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Ad Section Styling */
+        .ad-section {
+            background-color: var(--bg-dark); /* Use dark background for ad card */
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 150px; /* Give it some height */
+            color: var(--text-muted);
+            font-style: italic;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .ad-section .ad-placeholder {
+            width: 100%;
+            max-width: 728px; /* Common banner ad width */
+            height: 90px; /* Common banner ad height */
+            background-color: #4a5568; /* Placeholder background */
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-top: 1rem;
+            border: 1px dashed var(--primary-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+        body.light-mode .ad-section .ad-placeholder {
+            background-color: #e2e8f0;
+            color: #4a5568;
+            border-color: var(--primary-color);
+        }
+
+        /* Exam Preparation Section Specific Styles */
+        #exam-prep-view .card-section, #subject-tracker-view .card-section, #daily-planner-view .card-section { /* Sub-cards within dashboards */
+            background-color: var(--bg-dark);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            text-align: left; /* Align text left within these sections */
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        #exam-prep-view .card-section .section-subtitle, #subject-tracker-view .card-section .section-subtitle, #daily-planner-view .card-section .section-subtitle {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .exam-item, .bookmark-item, .topic-item {
+            background-color: var(--bg-card); /* Use bg-card for list items */
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            display: flex;
+            flex-direction: column; /* Stack name and countdown */
+            align-items: flex-start; /* Align text left */
+            color: var(--text-light);
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+            margin-bottom: 0.5rem; /* Spacing between list items */
+            position: relative; /* For delete button positioning */
+        }
+        .exam-item:last-child, .bookmark-item:last-child, .topic-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .exam-item .details, .bookmark-item .details {
+            flex-grow: 1;
+            text-align: left;
+            width: 100%; /* Ensure full width for text */
+        }
+        .exam-item .name, .bookmark-item .name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem; /* Space between name and countdown */
+        }
+        .exam-item .countdown, .bookmark-item .countdown {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .exam-item .delete-btn, .bookmark-item .delete-btn, .topic-item .delete-btn {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            font-size: 1.2rem;
+            position: absolute; /* Position delete button absolutely */
+            top: 0.75rem; /* Align with top padding */
+            right: 0.75rem; /* Align with right padding */
+            transition: color 0.2s ease;
+        }
+        .exam-item .delete-btn:hover, .bookmark-item .delete-btn:hover, .topic-item .delete-btn:hover {
+            color: #ff0000;
+            transform: scale(1.1);
+        }
+        .topic-item {
+            justify-content: flex-start;
+            gap: 0.75rem;
+            flex-direction: row; /* Keep checkbox and name in a row */
+        }
+        .topic-item input[type="checkbox"] {
+            width: auto;
+            margin-right: 0.5rem;
+            transform: scale(1.2);
+            accent-color: var(--primary-color); /* Highlight checkbox */
+        }
+        .topic-item .topic-name {
+            flex-grow: 1;
+            text-align: left;
+        }
+        .topic-item.completed .topic-name {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        /* Progress Bar Styling */
+        .progress-container {
+            width: 100%;
+            background-color: var(--border-color);
+            border-radius: 0.5rem;
+            height: 1rem;
+            overflow: hidden;
+            margin-top: 0.75rem;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 0.5rem;
+            transition: width 0.5s ease-in-out;
+        }
+
+        /* Calendar Styling */
+        #calendar-container {
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        #calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        #calendar-header button {
+            padding: 0.5rem 0.75rem;
+            font-size: 1rem;
+        }
+        #calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.25rem;
+            text-align: center;
+        }
+        #calendar-grid > div {
+            padding: 0.5rem 0.2rem;
+            border-radius: 0.25rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        #calendar-grid .day-name {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+        }
+        #calendar-grid .day-cell {
+            cursor: pointer;
+            position: relative;
+            color: var(--text-light);
+        }
+        #calendar-grid .day-cell:hover {
+            background-color: rgba(99, 102, 241, 0.2);
+        }
+        #calendar-grid .day-cell.current-month {
+            color: var(--text-light);
+        }
+        #calendar-grid .day-cell.other-month {
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+        #calendar-grid .day-cell.has-event {
+            background-color: rgba(167, 139, 250, 0.3); /* Lighter violet for events */
+            font-weight: 600;
+            border: 1px solid var(--secondary-color);
+        }
+        #calendar-grid .day-cell.today {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 700;
+            border: 1px solid var(--secondary-color);
+            box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+        }
+        body.light-mode #calendar-grid .day-cell.has-event {
+            background-color: rgba(167, 139, 250, 0.1);
+            border-color: var(--secondary-color);
+        }
+        body.light-mode #calendar-grid .day-cell.today {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        body.light-mode #calendar-grid .day-name {
+            color: var(--primary-color);
+        }
+
+        /* Spinner Wheel Styles */
+        #spinner-wheel-container {
+            position: relative;
+            width: 200px; /* Fixed size for the wheel */
+            height: 200px;
+            background-color: var(--bg-card);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* Hide parts of slices that extend beyond the circle */
+            border: 4px solid var(--primary-color);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+        }
+
+        #spinner-wheel {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: transform 4s cubic-bezier(0.25, 0.1, 0.25, 1); /* Slower, smoother ease-out */
+            border-radius: 50%; /* Ensure the element being rotated is also circular */
+        }
+
+        .spinner-text-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: 0% 0%; /* Rotate around the center of the wheel */
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-align: center;
+            white-space: nowrap; /* Prevent text from wrapping */
+            padding: 0 5px;
+            box-sizing: border-box;
+            pointer-events: none; /* Allow clicks to pass through to the wheel if needed */
+            z-index: 5; /* Above the wheel but below the pointer */
+        }
+
+        /* Pointer for the spinner */
+        #spinner-wheel-container::after {
+            content: '';
+            position: absolute;
+            top: -10px; /* Position above the wheel */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 20px solid var(--danger-color); /* Red pointer */
+            z-index: 20; /* Above the wheel */
+        }
+
+        #selected-topic-display {
+            text-align: center;
+        }
+
+        /* Message Box for Pop-up */
+        .popup-message-box {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--bg-card);
+            color: var(--text-light);
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: var(--box-shadow);
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border: 1px solid var(--border-color);
+            max-width: 90%; /* Responsive width */
+            text-align: center;
+        }
+
+        .popup-message-box.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Custom Scrollbar for lists */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Daily Planner Specific Styles */
+        .planner-time-slot {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-bottom: 1px dashed var(--border-color);
+            color: var(--text-light);
+        }
+        .planner-time-slot:last-child {
+            border-bottom: none;
+        }
+        .planner-time-label {
+            font-weight: 600;
+            color: var(--primary-color);
+            width: 60px; /* Fixed width for time label */
+            flex-shrink: 0;
+        }
+        .planner-task-display {
+            flex-grow: 1;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.3rem;
+            padding: 0.4rem 0.6rem;
+            min-height: 30px; /* Ensure some height even if empty */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+        .planner-task-item {
+            cursor: grab;
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.3rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: relative; /* For delete button */
+        }
+        .planner-task-item.completed {
+            background-color: var(--success-color);
+            text-decoration: line-through;
+            opacity: 0.8;
+        }
+        .planner-task-item.missed {
+            background-color: var(--danger-color);
+            opacity: 0.8;
+        }
+        .planner-task-item .delete-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+        .planner-task-item .delete-btn:hover {
+            opacity: 1;
+        }
+
+        .unassigned-tasks-list {
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            background-color: var(--bg-dark);
+            margin-top: 1rem;
+        }
+        .unassigned-tasks-list .planner-task-item {
+            margin-bottom: 0.5rem;
+            background-color: var(--primary-color); /* Different color for unassigned */
+        }
+        .unassigned-tasks-list .planner-task-item:last-child {
+            margin-bottom: 0;
+        }
+        .unassigned-tasks-list .placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+            text-align: center;
+            padding: 1rem;
+        }
+
+
+        /* Eisenhower Matrix Styles */
+        .eisenhower-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .eisenhower-quadrant {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .eisenhower-quadrant.drag-over {
+            border: 2px dashed var(--primary-color);
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+        .eisenhower-quadrant-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        .eisenhower-task {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.3rem;
+            cursor: grab;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.2s ease;
+            position: relative; /* For delete button */
+        }
+        .eisenhower-task.completed {
+            background-color: var(--success-color);
+            text-decoration: line-through;
+            opacity: 0.8;
+        }
+        .eisenhower-task.dragging {
+            opacity: 0.5;
+            border: 1px dashed var(--primary-color);
+        }
+        .eisenhower-task .delete-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+        .eisenhower-task .delete-btn:hover {
+            opacity: 1;
+        }
+
+        /* Reward System Styles */
+        .coins-display {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--warning-color);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .reward-item {
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-light);
+        }
+        .reward-item.unlocked {
+            background-color: rgba(16, 185, 129, 0.1); /* Light green tint */
+            border-color: var(--success-color);
+            opacity: 0.8;
+        }
+        .reward-item .cost {
+            font-weight: 600;
+            color: var(--warning-color);
+            margin-left: 1rem;
+        }
+        .reward-item .unlock-btn {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+            background: linear-gradient(90deg, var(--warning-color) 0%, #fcd34d 100%);
+            color: var(--bg-dark);
+            border-radius: 0.3rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        .reward-item .unlock-btn:hover:not(:disabled) {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+        .reward-item .unlock-btn:disabled {
+            background-color: var(--border-color);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+        .unlocked-content {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background-color: var(--bg-dark);
+            border: 1px dashed var(--primary-color);
+            border-radius: 0.5rem;
+            font-style: italic;
+            color: var(--text-muted);
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Daily Reflection Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: var(--bg-card);
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: var(--box-shadow);
+            width: 90%;
+            max-width: 500px;
+            color: var(--text-light);
+            position: relative;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .modal-close-btn:hover {
+            color: var(--danger-color);
+        }
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .modal-body p {
+            margin-bottom: 0.75rem;
+        }
+        .modal-body label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .modal-body textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .emoji-scale {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .emoji-scale label {
+            cursor: pointer;
+            font-size: 2rem;
+            opacity: 0.5;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .emoji-scale input[type="radio"] {
+            display: none;
+        }
+        .emoji-scale input[type="radio"]:checked + label {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+
+        /* Responsive Adjustments */
+        @media (min-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: 1fr 1fr; /* Two columns on larger screens */
+            }
+            #focus-mood-view #pomodoro-timer,
+            .ad-section { /* Timer, Ad, and Exam sections span full width in their respective views */
+                grid-column: span 2;
+            }
+            /* Increased gap for inner grids in exam prep view */
+            #exam-prep-view .grid-2-col-gap-8, #subject-tracker-view .grid-2-col-gap-8, #daily-planner-view .grid-2-col-gap-8 {
+                grid-template-columns: 1fr 1fr;
+                gap: 2rem; /* 8 units in Tailwind */
+            }
+            /* Ensure the daily planner grid spans full width if needed */
+            #daily-planner-view .daily-planner-grid-wrapper {
+                /* grid-column: span 2;  Removed this to allow side-by-side with matrix */
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-title {
+                font-size: 1.5rem;
+            }
+            #pomodoro-timer .timer-display {
+                font-size: 3rem;
+            }
+            .btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
+            }
+            .dashboard-container {
+                padding: 1rem;
+            }
+            #main-nav .nav-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav">
+        <button id="nav-focus-mood-btn" class="nav-btn active">Focus & Mood Dashboard</button>
+        <button id="nav-exam-prep-btn" class="nav-btn">Exam Preparation Dashboard</button>
+        <button id="nav-subject-tracker-btn" class="nav-btn">Subject-wise Study Tracker</button>
+        <button id="nav-daily-planner-btn" class="nav-btn">Daily Planner</button> </nav>
+
+    <div id="focus-mood-view" class="dashboard-container">
+        <button id="theme-toggle-btn" class="theme-toggle-btn-clone">
+            <i class="fas fa-moon"></i>
+        </button>
+
+        <div id="pomodoro-timer" class="card">
+            <h2 class="section-title">Pomodoro Timer</h2>
+            <div class="timer-display" id="timer-display">25:00</div>
+            <div class="timer-status" id="timer-status">Focus Time</div>
+            <div class="timer-controls">
+                <button class="btn" id="start-pause-btn"><i class="fas fa-play"></i> Start</button>
+                <button class="btn btn-secondary" id="reset-btn"><i class="fas fa-redo"></i> Reset</button>
+            </div>
+            <div class="w-full mt-4">
+                <label for="pomodoro-cycle-selector" class="block text-sm font-medium text-gray-400 mb-2">Select Cycle:</label>
+                <select id="pomodoro-cycle-selector">
+                    <option value="25-5">25 min Focus / 5 min Break</option>
+                    <option value="10-5">10 min Focus / 5 min Break</option>
+                    <option value="30-5">30 min Focus / 5 min Break</option>
+                    <option value="45-5">45 min Focus / 5 min Break</option>
+                </select>
+            </div>
+            <div id="recommended-pomodoro" class="message-box info hidden mt-4">
+                <p><strong>Recommendation:</strong> The classic 25-5 cycle is often recommended for optimal focus and preventing burnout.</p>
+            </div>
+            <div id="timer-message" class="message-box hidden"></div>
+        </div>
+
+        <div id="music-player" class="card">
+            <h2 class="section-title">Background Music</h2>
+            <div class="music-options">
+                <select id="music-selector">
+                    <option value="">Select Music</option>
+                    <option value="lofi-hiphop">Lofi Hip Hop Beats</option>
+                    <option value="calm-piano">Calm Piano Melodies</option>
+                    <option value="nature-sounds">Nature Sounds</option>
+                    <option value="dream-frequency-1">Dream Frequency Music 1</option>
+                    <option value="dream-frequency-2">Dream Frequency Music 2</option>
+                    <option value="healing-music-1">Healing Music 1</option>
+                    <option value="healing-music-2">Healing Music 2</option>
+                    <option value="body-rest-1">Body Rest Music 1</option>
+                    <option value="body-rest-2">Body Rest Music 2</option>
+                    <option value="body-telling-1">Body Telling Music 1</option>
+                    <option value="body-telling-2">Body Telling Music 2</option>
+                    <option value="youtube-lofi">YouTube: Lofi Study</option>
+                </select>
+                <audio id="background-audio" loop>
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg" data-name="lofi-hiphop">
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg" data-name="calm-piano">
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" type="audio/mpeg" data-name="nature-sounds">
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" type="audio/mpeg" data-name="dream-frequency-1">
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" type="audio/mpeg" data-name="dream-frequency-2">
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" type="audio/mpeg" data-name="healing-music-1">
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3" type="audio/mpeg" data-name="healing-music-2">
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" type="audio/mpeg" data-name="body-rest-1">
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3" type="audio/mpeg" data-name="body-rest-2">
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3" type="audio/mpeg" data-name="body-telling-1">
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3" type="audio/mpeg" data-name="body-telling-2">
+                    Your browser does not support the audio element.
+                </audio>
+                <div id="youtube-embed-container" class="hidden"></div>
+            </div>
+            <div class="music-controls">
+                <button class="btn" id="play-music-btn" disabled><i class="fas fa-play"></i> Play</button>
+                <button class="btn btn-secondary" id="stop-music-btn" disabled><i class="fas fa-stop"></i> Stop</button>
+            </div>
+            <div id="music-message" class="message-box hidden"></div>
+        </div>
+
+        <div id="mood-booster" class="card">
+            <h2 class="section-title">Mood Booster</h2>
+            <select id="mood-selector">
+                <option value="">How are you feeling?</option>
+                <option value="happy">Happy</option>
+                <option value="stressed">Stressed</option>
+                <option value="tired">Tired</option>
+                <option value="anxious">Anxious</option>
+                <option value="motivated">Motivated</option>
+                <option value="neutral">Neutral</option>
+            </select>
+            <div id="mood-output">Select a mood to get a tip or affirmation!</div>
+            <div id="mood-message" class="message-box hidden"></div>
+        </div>
+
+        <div class="ad-section card">
+            <h2 class="section-title">Advertisement</h2>
+            <p class="text-sm">Your ad content will appear here.</p>
+            <div class="ad-placeholder">
+                <p>Ad Placeholder (e.g., Google AdSense)</p>
+            </div>
+            <p class="text-xs mt-2">This section is designed to integrate banner ads without disrupting your focus.</p>
+        </div>
+    </div>
+
+    <div id="exam-prep-view" class="dashboard-container hidden">
+        <button id="theme-toggle-btn-exam-prep" class="theme-toggle-btn-clone">
+            <i class="fas fa-moon"></i>
+        </button>
+        <h2 class="section-title">Exam Preparation Dashboard</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="card-section">
+                <h3 class="section-subtitle">Add New Exam</h3>
+                <label for="exam-name-input" class="block text-sm font-medium text-gray-400 mb-1">Exam Name:</label>
+                <input type="text" id="exam-name-input" placeholder="e.g., Math Finals" class="form-input mb-2">
+                <label for="exam-date-input" class="block text-sm font-medium text-gray-400 mb-1">Exam Date:</label>
+                <input type="date" id="exam-date-input" class="form-input mb-4">
+                <button id="add-exam-btn" class="btn w-full">Add Exam</button>
+            </div>
+
+            <div class="card-section">
+                <h3 class="section-subtitle">Upcoming Exams</h3>
+                <div id="exams-list" class="space-y-3">
+                    <p class="text-gray-400">No exams added yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="card-section">
+                <h3 class="section-subtitle">Study Topics Checklist</h3>
+                <label for="topic-name-input" class="block text-sm font-medium text-gray-400 mb-1">Topic Name:</label>
+                <input type="text" id="topic-name-input" placeholder="e.g., Algebra Basics" class="form-input mb-2">
+                <button id="add-topic-btn" class="btn w-full mb-4">Add Topic</button>
+                <div id="topics-list" class="space-y-2">
+                    <p class="text-gray-400">No topics added yet.</p>
+                </div>
+                <div class="mt-4">
+                    <p class="text-gray-300 mb-2">Progress: <span id="topic-progress-percentage">0%</span></p>
+                    <div class="progress-container">
+                        <div id="topic-progress-bar" class="progress-bar" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-section">
+                <h3 class="section-subtitle">Study Suggestion</h3>
+                <div id="study-suggestion-output" class="text-gray-300 text-center">
+                    <p>Add exams and topics to get a study suggestion.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="calendar-container" class="card-section full-width-card">
+            <h3 class="section-subtitle">Calendar View</h3>
+            <div id="calendar-header">
+                <button id="prev-month-btn" class="btn-secondary"><i class="fas fa-chevron-left"></i></button>
+                <span id="current-month-year" class="text-lg font-semibold text-primary-color"></span>
+                <button id="next-month-btn" class="btn-secondary"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div id="calendar-grid">
+                <div class="day-name">Sun</div>
+                <div class="day-name">Mon</div>
+                <div class="day-name">Tue</div>
+                <div class="day-name">Wed</div>
+                <div class="day-name">Thu</div>
+                <div class="day-name">Fri</div>
+                <div class="day-name">Sat</div>
+            </div>
+            <div id="calendar-event-details" class="message-box info hidden mt-4"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="card-section">
+                <h3 class="section-subtitle">Bookmark Important Events</h3>
+                <label for="bookmark-name-input" class="block text-sm font-medium text-gray-400 mb-1">Event Name:</label>
+                <input type="text" id="bookmark-name-input" placeholder="e.g., Admission Form Deadline" class="form-input mb-2">
+                <label for="bookmark-date-input" class="block text-sm font-medium text-gray-400 mb-1">Event Date:</label>
+                <input type="date" id="bookmark-date-input" class="form-input mb-4">
+                <button id="add-bookmark-btn" class="btn w-full">Add Bookmark</button>
+            </div>
+
+            <div class="card-section">
+                <h3 class="section-subtitle">Bookmarked Events</h3>
+                <div id="bookmarks-list" class="space-y-3">
+                    <p class="text-gray-400">No bookmarked events yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="reminder-message-box" class="message-box info hidden mt-4 full-width-card"></div>
+
+        <div class="ad-section card full-width-card">
+            <h2 class="section-title">Advertisement</h2>
+            <p class="text-sm">Your ad content will appear here.</p>
+            <div class="ad-placeholder">
+                <p>Ad Placeholder (e.g., Google AdSense)</p>
+            </div>
+            <p class="text-xs mt-2">This section is designed to integrate banner ads without disrupting your focus.</p>
+        </div>
+    </div>
+
+    <div id="subject-tracker-view" class="dashboard-container hidden">
+        <button id="theme-toggle-btn-subject-tracker" class="theme-toggle-btn-clone">
+            <i class="fas fa-moon"></i>
+        </button>
+        <h2 class="section-title">Subject-wise Study Tracker Dashboard</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="card-section">
+                <h3 class="section-subtitle">Log Your Study Hours</h3>
+                <div class="mb-4">
+                    <label for="new-subject-input" class="block text-sm font-medium text-gray-400 mb-1">Add New Subject:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-subject-input" placeholder="e.g., Physics" class="form-input flex-grow">
+                        <button id="add-subject-btn" class="btn btn-secondary px-4 py-2 text-sm">Add</button>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="study-subject-select" class="block text-sm font-medium text-gray-400 mb-1">Select Subject:</label>
+                    <select id="study-subject-select" class="form-input">
+                        <option value="">Select a Subject</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="study-hours-input" class="block text-sm font-medium text-gray-400 mb-1">Hours Studied Today:</label>
+                    <input type="number" id="study-hours-input" min="0" step="0.1" placeholder="e.g., 2.5" class="form-input">
+                </div>
+                <button id="log-study-hours-btn" class="btn w-full mb-4">Log Hours</button>
+
+                <div id="motivational-message" class="message-box success hidden mb-4"></div>
+
+                <h4 class="text-md font-semibold text-gray-300 mb-2">Cumulative Stats:</h4>
+                <div id="cumulative-stats" class="text-gray-400 text-sm mb-4">
+                    <p>Total Hours: <span id="total-study-hours">0</span></p>
+                    <p>Avg. Hours/Day: <span id="avg-study-hours">0</span></p>
+                </div>
+
+                <div id="study-progress-section-wrapper" class="mt-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-md font-semibold text-gray-300">Study Progress (Last 7 Days):</h4>
+                        <button id="toggle-study-chart-btn" class="btn btn-secondary px-3 py-1 text-xs md:hidden">View More</button>
+                    </div>
+                    <div id="study-chart-content" class="hidden md:block">
+                        <canvas id="study-progress-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h4 class="text-md font-semibold text-gray-300 mb-2">Study Log:</h4>
+                    <ul id="study-log" class="list-disc list-inside h-48 overflow-y-auto custom-scrollbar p-2 border border-gray-700 rounded-md bg-gray-800">
+                        <p class="text-gray-400 text-sm">No study entries yet.</p>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card-section">
+                <h3 class="section-subtitle">What Should I Study Today?</h3>
+                <div class="mb-4">
+                    <label for="new-topic-spinner-input" class="block text-sm font-medium text-gray-400 mb-1">Add Study Topic:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-topic-spinner-input" placeholder="e.g., Chapter 5 Calculus" class="form-input flex-grow">
+                        <button id="add-topic-spinner-btn" class="btn btn-secondary px-4 py-2 text-sm">Add</button>
+                    </div>
+                </div>
+                <div class="mt-4 mb-4">
+                    <h4 class="text-md font-semibold text-gray-300 mb-2">Available Topics:</h4>
+                    <ul id="spinner-topics-list" class="list-disc list-inside h-32 overflow-y-auto custom-scrollbar p-2 border border-gray-700 rounded-md bg-gray-800">
+                        <p class="text-gray-400 text-sm">No topics added for spinner.</p>
+                    </ul>
+                </div>
+                <div class="flex flex-col items-center w-full space-y-4"> <div id="spinner-wheel-container" class="relative w-48 h-48 bg-gray-700 rounded-full flex items-center justify-center overflow-hidden border-4 border-primary-color shadow-lg">
+                        <div id="spinner-wheel" class="absolute inset-0 transition-transform duration-500 ease-out">
+                            </div>
+                        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-r-[10px] border-b-[20px] border-l-transparent border-r-transparent border-b-red-500 z-10 pointer-events-none"></div>
+                    </div>
+                    <button id="spin-button" class="btn w-full">Spin to Study!</button>
+                    <p id="selected-topic-display" class="text-lg font-semibold text-primary-color hidden">You should study: <span class="font-bold text-white"></span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="ad-section card full-width-card">
+            <h2 class="section-title">Advertisement</h2>
+            <p class="text-sm">Your ad content will appear here.</p>
+            <div class="ad-placeholder">
+                <p>Ad Placeholder (e.g., Google AdSense)</p>
+            </div>
+            <p class="text-xs mt-2">This section is designed to integrate banner ads without disrupting your focus.</p>
+        </div>
+    </div>
+
+    <div id="daily-planner-view" class="dashboard-container hidden">
+        <button id="theme-toggle-btn-daily-planner" class="theme-toggle-btn-clone">
+            <i class="fas fa-moon"></i>
+        </button>
+        <h2 class="section-title">Smart Daily Planner & Priority Tracker</h2>
+
+        <div class="coins-display">
+            <i class="fas fa-coins text-yellow-500 mr-2"></i> Coins: <span id="coins-count">0</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="card-section">
+                <h3 class="section-subtitle">Daily Planner (Schedule by Hours)</h3>
+                <div class="mb-4 flex gap-2">
+                    <input type="text" id="planner-task-input" placeholder="Add a task for today..." class="form-input flex-grow">
+                    <button id="add-planner-task-btn" class="btn btn-secondary px-4 py-2 text-sm">Add Task</button>
+                </div>
+
+                <h4 class="text-md font-semibold text-gray-300 mb-2 mt-4">Unassigned Tasks:</h4>
+                <div id="unassigned-planner-tasks-list" class="unassigned-tasks-list custom-scrollbar">
+                    <p class="placeholder">No unassigned tasks. Add one above!</p>
+                </div>
+
+                <h4 class="text-md font-semibold text-gray-300 mb-2 mt-4">Your Schedule:</h4>
+                <div id="daily-planner-grid" class="border border-gray-700 rounded-md overflow-hidden bg-gray-800">
+                    </div>
+                <div class="message-box info hidden mt-4" id="planner-message"></div>
+            </div>
+
+            <div class="card-section">
+                <h3 class="section-subtitle">Task Prioritization (Eisenhower Matrix)</h3>
+                <div class="mb-4 flex gap-2">
+                    <input type="text" id="matrix-task-input" placeholder="Add task to prioritize..." class="form-input flex-grow">
+                    <button id="add-matrix-task-btn" class="btn btn-secondary px-4 py-2 text-sm">Add Task</button>
+                </div>
+                <div class="eisenhower-grid">
+                    <div class="eisenhower-quadrant" id="quadrant-urgent-important" data-quadrant="urgent-important">
+                        <div class="eisenhower-quadrant-title">Urgent & Important</div>
+                    </div>
+                    <div class="eisenhower-quadrant" id="quadrant-important-not-urgent" data-quadrant="important-not-urgent">
+                        <div class="eisenhower-quadrant-title">Important but Not Urgent</div>
+                    </div>
+                    <div class="eisenhower-quadrant" id="quadrant-urgent-not-important" data-quadrant="urgent-not-important">
+                        <div class="eisenhower-quadrant-title">Urgent but Not Important</div>
+                    </div>
+                    <div class="eisenhower-quadrant" id="quadrant-neither" data-quadrant="neither">
+                        <div class="eisenhower-quadrant-title">Neither</div>
+                    </div>
+                </div>
+                <div class="message-box info hidden mt-4" id="matrix-message"></div>
+            </div>
+        </div>
+
+        <div class="card-section full-width-card mt-8">
+            <h3 class="section-subtitle">Reward Shop</h3>
+            <p class="text-gray-400 text-center mb-4">Spend your coins to unlock motivational content!</p>
+            <div id="reward-shop-list" class="space-y-2">
+                </div>
+            <div id="reward-message" class="message-box info hidden mt-4"></div>
+            <div id="unlocked-quote-display" class="unlocked-content hidden mt-4">
+                Your unlocked quote will appear here!
+            </div>
+        </div>
+
+        <div class="card-section full-width-card mt-8 text-center">
+            <h3 class="section-subtitle">Daily Reflection</h3>
+            <p class="text-gray-400 mb-4">Reflect on your day and get insights!</p>
+            <button id="end-day-summary-btn" class="btn w-full">End Day & Get Summary</button>
+            <div id="daily-reflection-message" class="message-box info hidden mt-4"></div>
+        </div>
+
+
+        <div class="ad-section card full-width-card">
+            <h2 class="section-title">Advertisement</h2>
+            <p class="text-sm">Your ad content will appear here.</p>
+            <div class="ad-placeholder">
+                <p>Ad Placeholder (e.g., Google AdSense)</p>
+            </div>
+            <p class="text-xs mt-2">This section is designed to integrate banner ads without disrupting your focus.</p>
+        </div>
+    </div>
+
+    <div id="daily-reflection-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="close-reflection-modal"><i class="fas fa-times"></i></button>
+            <h2 class="modal-title">Daily Reflection</h2>
+            <div class="modal-body">
+                <p>Productivity for today: <strong id="productivity-percentage">0%</strong></p>
+                <p>Completed Tasks: <span id="completed-tasks-count">0</span> / Total Tasks: <span id="total-tasks-count">0</span></p>
+
+                <label for="distractions-input" class="mt-4">What distracted you today?</label>
+                <textarea id="distractions-input" class="form-input" placeholder="e.g., Social media, unexpected calls..."></textarea>
+
+                <label class="mt-4">How was your mood today?</label>
+                <div class="emoji-scale">
+                    <input type="radio" id="mood-terrible" name="mood-rating" value="terrible">
+                    <label for="mood-terrible">😞</label>
+                    <input type="radio" id="mood-bad" name="mood-rating" value="bad">
+                    <label for="mood-bad">🙁</label>
+                    <input type="radio" id="mood-neutral" name="mood-rating" value="neutral" checked>
+                    <label for="mood-neutral">😐</label>
+                    <input type="radio" id="mood-good" name="mood-rating" value="good">
+                    <label for="mood-good">🙂</label>
+                    <input type="radio" id="mood-great" name="mood-rating" value="great">
+                    <label for="mood-great">😊</label>
+                </div>
+
+                <div id="reflection-tips" class="message-box info hidden mt-4"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="submit-reflection-btn" class="btn">Submit Reflection</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- Utility Functions ---
+        /**
+         * Displays a message in a designated message box.
+         * @param {HTMLElement} messageBoxElement - The HTML element to display the message in.
+         * @param {string} type - 'info', 'success', or 'error' for styling.
+         * @param {string} message - The message text.
+         * @param {boolean} autoHide - If true, hides the message after 5 seconds.
+         */
+        function showMessage(messageBoxElement, type, message, autoHide = false) {
+            if (!messageBoxElement) return;
+            messageBoxElement.classList.remove('hidden', 'info', 'success', 'error');
+            messageBoxElement.classList.add(type);
+            messageBoxElement.innerHTML = `<i class="fas fa-info-circle mr-2"></i>${message}`; // Default icon
+
+            if (type === 'success') {
+                messageBoxElement.querySelector('i').className = 'fas fa-check-circle mr-2';
+            } else if (type === 'error') {
+                messageBoxElement.querySelector('i').className = 'fas fa-exclamation-triangle mr-2';
+            }
+
+            if (autoHide) {
+                setTimeout(() => {
+                    messageBoxElement.classList.add('hidden');
+                }, 5000);
+            }
+        }
+
+        // --- Dashboard Navigation Logic ---
+        const navFocusMoodBtn = document.getElementById('nav-focus-mood-btn');
+        const navExamPrepBtn = document.getElementById('nav-exam-prep-btn');
+        const navSubjectTrackerBtn = document.getElementById('nav-subject-tracker-btn'); // New nav button
+        const navDailyPlannerBtn = document.getElementById('nav-daily-planner-btn'); // NEW: Daily Planner nav button
+
+        const focusMoodView = document.getElementById('focus-mood-view');
+        const examPrepView = document.getElementById('exam-prep-view');
+        const subjectTrackerView = document.getElementById('subject-tracker-view'); // New dashboard view
+        const dailyPlannerView = document.getElementById('daily-planner-view'); // NEW: Daily Planner dashboard view
+
+        function switchDashboard(dashboardId) {
+            // Hide all dashboards
+            focusMoodView.classList.add('hidden');
+            examPrepView.classList.add('hidden');
+            subjectTrackerView.classList.add('hidden'); // Hide new dashboard
+            dailyPlannerView.classList.add('hidden'); // NEW: Hide daily planner dashboard
+
+            // Deactivate all nav buttons
+            navFocusMoodBtn.classList.remove('active');
+            navExamPrepBtn.classList.remove('active');
+            navSubjectTrackerBtn.classList.remove('active'); // Deactivate new nav button
+            navDailyPlannerBtn.classList.remove('active'); // NEW: Deactivate daily planner nav button
+
+            // Show the selected dashboard and activate its button
+            if (dashboardId === 'focus-mood-view') {
+                focusMoodView.classList.remove('hidden');
+                navFocusMoodBtn.classList.add('active');
+            } else if (dashboardId === 'exam-prep-view') {
+                examPrepView.classList.remove('hidden');
+                navExamPrepBtn.classList.add('active');
+            } else if (dashboardId === 'subject-tracker-view') {
+                subjectTrackerView.classList.remove('hidden');
+                navSubjectTrackerBtn.classList.add('active');
+                // Special initialization for this view
+                updateStudyStats();
+                if (!studyChart) {
+                    initStudyChart();
+                }
+                updateStudyChart(7); // Always update with 7 days
+                renderSpinnerTopics();
+            } else if (dashboardId === 'daily-planner-view') { // NEW: Daily Planner logic
+                dailyPlannerView.classList.remove('hidden');
+                navDailyPlannerBtn.classList.add('active');
+                // Initialize daily planner and Eisenhower matrix
+                loadDailyPlannerData(); // Ensure data is loaded/reset for the day
+                renderDailyPlanner();
+                renderUnassignedPlannerTasks(); // NEW: Render unassigned tasks
+                renderEisenhowerMatrix();
+                renderRewardShop(); // NEW: Render reward shop
+                updateCoinsDisplay(); // NEW: Update coins display
+            }
+            localStorage.setItem('activeDashboard', dashboardId); // Save active dashboard
+        }
+
+        navFocusMoodBtn.addEventListener('click', () => switchDashboard('focus-mood-view'));
+        navExamPrepBtn.addEventListener('click', () => switchDashboard('exam-prep-view'));
+        navSubjectTrackerBtn.addEventListener('click', () => switchDashboard('subject-tracker-view')); // New nav button event listener
+        navDailyPlannerBtn.addEventListener('click', () => switchDashboard('daily-planner-view')); // NEW: Daily Planner nav button event listener
+
+        // --- Theme Toggle Logic ---
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        const themeToggleBtnExamPrep = document.getElementById('theme-toggle-btn-exam-prep'); // Clone for exam prep view
+        const themeToggleBtnSubjectTracker = document.getElementById('theme-toggle-btn-subject-tracker'); // Clone for new subject tracker view
+        const themeToggleBtnDailyPlanner = document.getElementById('theme-toggle-btn-daily-planner'); // NEW: Clone for daily planner view
+        const body = document.body;
+
+        /**
+         * Sets the theme of the dashboard.
+         * @param {string} theme - 'dark' or 'light'.
+         */
+        function setTheme(theme) {
+            if (theme === 'light') {
+                body.classList.add('light-mode');
+                themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+                themeToggleBtnExamPrep.innerHTML = '<i class="fas fa-sun"></i>';
+                if (themeToggleBtnSubjectTracker) themeToggleBtnSubjectTracker.innerHTML = '<i class="fas fa-sun"></i>'; // Update new clone
+                if (themeToggleBtnDailyPlanner) themeToggleBtnDailyPlanner.innerHTML = '<i class="fas fa-sun"></i>'; // NEW: Update daily planner clone
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.classList.remove('light-mode');
+                themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
+                themeToggleBtnExamPrep.innerHTML = '<i class="fas fa-moon"></i>';
+                if (themeToggleBtnSubjectTracker) themeToggleBtnSubjectTracker.innerHTML = '<i class="fas fa-moon"></i>'; // Update new clone
+                if (themeToggleBtnDailyPlanner) themeToggleBtnDailyPlanner.innerHTML = '<i class="fas fa-moon"></i>'; // NEW: Update daily planner clone
+                localStorage.setItem('theme', 'dark');
+            }
+            // Update chart colors after theme change
+            updateChartColors();
+        }
+
+        /**
+         * Toggles the theme between dark and light.
+         */
+        function toggleTheme() {
+            if (body.classList.contains('light-mode')) {
+                setTheme('dark');
+            } else {
+                setTheme('light');
+            }
+        }
+
+        // Event listener for theme toggle buttons
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', toggleTheme);
+        }
+        if (themeToggleBtnExamPrep) {
+            themeToggleBtnExamPrep.addEventListener('click', toggleTheme);
+        }
+        if (themeToggleBtnSubjectTracker) { // New theme toggle listener
+            themeToggleBtnSubjectTracker.addEventListener('click', toggleTheme);
+        }
+        if (themeToggleBtnDailyPlanner) { // NEW: Daily planner theme toggle listener
+            themeToggleBtnDailyPlanner.addEventListener('click', toggleTheme);
+        }
+
+        // --- Pomodoro Timer Logic ---
+        const timerDisplay = document.getElementById('timer-display');
+        const timerStatus = document.getElementById('timer-status');
+        const startPauseBtn = document.getElementById('start-pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const timerMessageBox = document.getElementById('timer-message');
+        const pomodoroCycleSelector = document.getElementById('pomodoro-cycle-selector');
+        const recommendedPomodoroMessage = document.getElementById('recommended-pomodoro');
+
+        // Define Pomodoro cycles in seconds
+        const pomodoroCycles = {
+            "10-5": { focus: 10 * 60, break: 5 * 60 },
+            "25-5": { focus: 25 * 60, break: 5 * 60 },
+            "30-5": { focus: 30 * 60, break: 5 * 60 },
+            "45-5": { focus: 45 * 60, break: 5 * 60 }
+        };
+
+        let currentFocusDuration = pomodoroCycles["25-5"].focus;
+        let currentBreakDuration = pomodoroCycles["25-5"].break;
+        let remainingTime = currentFocusDuration;
+        let isRunning = false;
+        let isFocusMode = true;
+        let timerInterval = null;
+
+        /**
+         * Updates the timer display (MM:SS format).
+         */
+        function updateTimerDisplay() {
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        /**
+         * Starts or pauses the timer.
+         */
+        function startPauseTimer() {
+            if (isRunning) {
+                // Pause timer
+                clearInterval(timerInterval);
+                isRunning = false;
+                startPauseBtn.innerHTML = '<i class="fas fa-play"></i> Start';
+                showMessage(timerMessageBox, 'info', 'Timer paused.');
+                pomodoroCycleSelector.disabled = false; // Enable selector when paused
+            } else {
+                // Start timer
+                isRunning = true;
+                startPauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+                showMessage(timerMessageBox, 'info', isFocusMode ? 'Focus time started!' : 'Break time started!');
+                pomodoroCycleSelector.disabled = true; // Disable selector when running
+                timerInterval = setInterval(() => {
+                    remainingTime--;
+                    updateTimerDisplay();
+
+                    if (remainingTime <= 0) {
+                        clearInterval(timerInterval);
+                        playNotificationSound();
+                        isFocusMode = !isFocusMode; // Toggle mode
+                        remainingTime = isFocusMode ? currentFocusDuration : currentBreakDuration;
+                        timerStatus.textContent = isFocusMode ? 'Focus Time' : 'Break Time';
+                        showMessage(timerMessageBox, 'success', isFocusMode ? 'Break over! Time to focus.' : 'Focus time done! Take a break.', true);
+                        startPauseTimer(); // Automatically restart for the next phase
+                    }
+                }, 1000);
+            }
+        }
+
+        /**
+         * Resets the timer to initial focus mode.
+         */
+        function resetTimer() {
+            clearInterval(timerInterval);
+            // Reset to the currently selected cycle's focus duration
+            const selectedCycle = pomodoroCycleSelector.value;
+            currentFocusDuration = pomodoroCycles[selectedCycle].focus;
+            currentBreakDuration = pomodoroCycles[selectedCycle].break;
+
+            remainingTime = currentFocusDuration;
+            isRunning = false;
+            isFocusMode = true;
+            updateTimerDisplay();
+            timerStatus.textContent = 'Focus Time';
+            startPauseBtn.innerHTML = '<i class="fas fa-play"></i> Start';
+            showMessage(timerMessageBox, 'info', 'Timer reset.', true);
+            pomodoroCycleSelector.disabled = false; // Enable selector after reset
+        }
+
+        /**
+         * Plays a short notification sound.
+         */
+        function playNotificationSound() {
+            const audio = new Audio('https://www.soundjay.com/buttons/beep-07.mp3'); // Example beep sound
+            audio.play().catch(e => console.error("Error playing sound:", e));
+        }
+
+        // Event Listeners for Timer
+        if (startPauseBtn) {
+            startPauseBtn.addEventListener('click', startPauseTimer);
+        }
+        if (resetBtn) {
+            resetBtn.addEventListener('click', resetTimer);
+        }
+        if (pomodoroCycleSelector) {
+            pomodoroCycleSelector.addEventListener('change', () => {
+                // When cycle changes, reset the timer to the new cycle's focus duration
+                resetTimer();
+            });
+        }
+
+        // Initial display update
+        updateTimerDisplay();
+
+        // Show recommendation message once on load
+        if (recommendedPomodoroMessage) {
+            recommendedPomodoroMessage.classList.remove('hidden');
+            setTimeout(() => {
+                recommendedPomodoroMessage.classList.add('hidden');
+            }, 7000); // Hide after 7 seconds
+        }
+
+
+        // --- Background Music Logic ---
+        const musicSelector = document.getElementById('music-selector');
+        const backgroundAudio = document.getElementById('background-audio');
+        const youtubeEmbedContainer = document.getElementById('youtube-embed-container');
+        const musicMessageBox = document.getElementById('music-message');
+        const playMusicBtn = document.getElementById('play-music-btn');
+        const stopMusicBtn = document.getElementById('stop-music-btn');
+
+        // Mapping for audio sources and YouTube video IDs
+        const musicSources = {
+            "lofi-hiphop": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+            "calm-piano": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+            "nature-sounds": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+            "dream-frequency-1": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+            "dream-frequency-2": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+            "healing-music-1": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+            "healing-music-2": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+            "body-rest-1": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+            "body-rest-2": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+            "body-telling-1": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+            "body-telling-2": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3",
+            "youtube-lofi": "https://www.youtube.com/embed/jfKfPfyqkOY?autoplay=1&loop=1&playlist=jfKfPfyqkOY" // Lofi Girl - Lofi Hip Hop Radio
+        };
+
+        let currentPlayingType = null; // 'audio' or 'youtube'
+        let currentYoutubeIframe = null; // Reference to the YouTube iframe
+
+        /**
+         * Updates the state of the play/stop music buttons.
+         * @param {boolean} isPlaying - True if music is currently playing, false otherwise.
+         * @param {boolean} isMusicSelected - True if a music option is selected, false otherwise.
+         */
+        function updateMusicButtons(isPlaying, isMusicSelected) {
+            if (playMusicBtn) {
+                playMusicBtn.disabled = isPlaying || !isMusicSelected;
+            }
+            if (stopMusicBtn) {
+                stopMusicBtn.disabled = !isPlaying;
+            }
+        }
+
+        /**
+         * Stops any currently playing audio or YouTube video.
+         */
+        function stopCurrentMusic() {
+            if (backgroundAudio) {
+                backgroundAudio.pause();
+                backgroundAudio.currentTime = 0; // Reset audio to start
+            }
+            if (currentYoutubeIframe) {
+                // To stop YouTube, clear the iframe content
+                youtubeEmbedContainer.innerHTML = '';
+                youtubeEmbedContainer.classList.add('hidden');
+                currentYoutubeIframe = null;
+            }
+            currentPlayingType = null;
+            updateMusicButtons(false, musicSelector.value !== "");
+            showMessage(musicMessageBox, 'info', 'Music stopped.', true);
+        }
+
+        /**
+         * Plays the currently selected music.
+         */
+        function playSelectedMusic() {
+            const selectedMusic = musicSelector.value;
+            if (!selectedMusic) {
+                showMessage(musicMessageBox, 'error', 'Please select a music option first.', true);
+                updateMusicButtons(false, false);
+                return;
+            }
+
+            // Ensure any previous music is stopped before playing new one
+            stopCurrentMusic();
+
+            if (selectedMusic.startsWith('youtube-')) {
+                // Handle YouTube embed
+                const videoUrl = musicSources[selectedMusic];
+                if (youtubeEmbedContainer && videoUrl) {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = videoUrl + "?autoplay=1"; // Add autoplay parameter
+                    iframe.allow = "autoplay; encrypted-media";
+                    iframe.setAttribute("allowfullscreen", "");
+                    youtubeEmbedContainer.appendChild(iframe);
+                    youtubeEmbedContainer.classList.remove('hidden');
+                    currentYoutubeIframe = iframe;
+                    currentPlayingType = 'youtube';
+                    showMessage(musicMessageBox, 'info', 'Playing YouTube music. Interact directly with the video for controls.', true);
+                } else {
+                    showMessage(musicMessageBox, 'error', 'Could not load YouTube video.', true);
+                }
+            } else {
+                // Handle MP3 audio
+                const audioSource = musicSources[selectedMusic];
+                if (backgroundAudio && audioSource) {
+                    backgroundAudio.src = audioSource;
+                    backgroundAudio.load(); // Load the new source
+                    backgroundAudio.play()
+                        .then(() => {
+                            currentPlayingType = 'audio';
+                            showMessage(musicMessageBox, 'success', `Playing: ${selectedMusic.replace('-', ' ')}`, true);
+                        })
+                        .catch(error => {
+                            console.error("Error playing audio:", error);
+                            showMessage(musicMessageBox, 'error', 'Failed to play music. Browser might block autoplay or no user interaction.', true);
+                        });
+                } else {
+                    showMessage(musicMessageBox, 'error', 'Could not load audio file.', true);
+                }
+            }
+            updateMusicButtons(true, true); // Assume playing after selection
+        }
+
+
+        /**
+         * Handles music selection from the dropdown.
+         */
+        function handleMusicSelection() {
+            const selectedMusic = musicSelector.value;
+            if (selectedMusic) {
+                playSelectedMusic(); // Automatically play when a new selection is made
+            } else {
+                stopCurrentMusic(); // Stop if "Select Music" is chosen
+            }
+        }
+
+        // Event Listener for Music Selector
+        if (musicSelector) {
+            musicSelector.addEventListener('change', handleMusicSelection);
+        }
+
+        // Event Listeners for Play/Stop Buttons
+        if (playMusicBtn) {
+            playMusicBtn.addEventListener('click', playSelectedMusic);
+        }
+        if (stopMusicBtn) {
+            stopMusicBtn.addEventListener('click', stopCurrentMusic);
+        }
+
+        // Initial state of music buttons
+        updateMusicButtons(false, false); // No music selected, not playing
+
+        // --- Mood Booster Logic ---
+        const moodSelector = document.getElementById('mood-selector');
+        const moodOutput = document.getElementById('mood-output');
+        const moodMessageBox = document.getElementById('mood-message');
+
+        const moodData = {
+            "happy": [
+                "Keep shining! Your positivity is contagious.",
+                "Embrace this joy and share it with the world.",
+                "What a wonderful feeling! Cherish every moment."
+            ],
+            "stressed": [
+                "Take a deep breath. You've got this. One step at a time.",
+                "It's okay to feel overwhelmed. Break tasks into smaller steps.",
+                "Remember to prioritize self-care. Even a 5-minute break helps."
+            ],
+            "tired": [
+                "Rest is not a luxury, it's a necessity. Listen to your body.",
+                "A short nap or a walk in fresh air can do wonders.",
+                "You've worked hard. Recharge yourself."
+            ],
+            "anxious": [
+                "Focus on what you can control. Let go of what you can't.",
+                "Practice mindfulness. Observe your thoughts without judgment.",
+                "Connect with someone you trust. Sharing helps lighten the load."
+            ],
+            "motivated": [
+                "Your drive is inspiring! Keep that momentum going.",
+                "You're on fire! Channel this energy into your goals.",
+                "The world is ready for your brilliance. Go for it!"
+            ],
+            "neutral": [
+                "A calm mind is a powerful mind. Stay present.",
+                "Every moment is an opportunity for growth.",
+                "Observe, learn, and grow. You're doing great."
+            ]
+        };
+
+        /**
+         * Displays a random tip or affirmation based on the selected mood.
+         */
+        function displayMoodOutput() {
+            const selectedMood = moodSelector.value;
+            if (selectedMood && moodData[selectedMood]) {
+                const tips = moodData[selectedMood];
+                const randomIndex = Math.floor(Math.random() * tips.length);
+                moodOutput.textContent = tips[randomIndex];
+                showMessage(moodMessageBox, 'success', `Here's a tip for when you're feeling ${selectedMood}!`, true);
+            } else {
+                moodOutput.textContent = "Select a mood to get a tip or affirmation!";
+                moodMessageBox.classList.add('hidden');
+            }
+        }
+
+        // Event Listener for Mood Selector
+        if (moodSelector) {
+            moodSelector.addEventListener('change', displayMoodOutput);
+        }
+
+        // Initial call to set default mood output
+        displayMoodOutput();
+
+        // --- Exam Preparation Dashboard Logic ---
+        const examNameInput = document.getElementById('exam-name-input');
+        const examDateInput = document.getElementById('exam-date-input');
+        const addExamBtn = document.getElementById('add-exam-btn');
+        const examsList = document.getElementById('exams-list');
+
+        const topicNameInput = document.getElementById('topic-name-input');
+        const addTopicBtn = document.getElementById('add-topic-btn');
+        const topicsList = document.getElementById('topics-list');
+        const topicProgressBar = document.getElementById('topic-progress-bar');
+        const topicProgressPercentage = document.getElementById('topic-progress-percentage');
+
+        const studySuggestionOutput = document.getElementById('study-suggestion-output');
+
+        const prevMonthBtn = document.getElementById('prev-month-btn');
+        const nextMonthBtn = document.getElementById('next-month-btn');
+        const currentMonthYearSpan = document.getElementById('current-month-year');
+        const calendarGrid = document.getElementById('calendar-grid');
+        const calendarEventDetails = document.getElementById('calendar-event-details');
+
+        const bookmarkNameInput = document.getElementById('bookmark-name-input');
+        const bookmarkDateInput = document.getElementById('bookmark-date-input');
+        const addBookmarkBtn = document.getElementById('add-bookmark-btn');
+        const bookmarksList = document.getElementById('bookmarks-list');
+        const reminderMessageBox = document.getElementById('reminder-message-box');
+
+        // Data structure for localStorage
+        let examPrepData = {
+            exams: [], // { id: string, name: string, date: string (YYYY-MM-DD) }
+            topics: [], // { id: string, name: string, completed: boolean }
+            bookmarks: [] // { id: string, name: string, date: string (YYYY-MM-DD) }
+        };
+
+        // Alarm sound for reminders
+        const reminderSound = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3'); // Example bell sound
+
+        /**
+         * Loads data from localStorage.
+         */
+        function loadExamPrepData() {
+            const savedData = localStorage.getItem('examPrepData');
+            if (savedData) {
+                examPrepData = JSON.parse(savedData);
+            }
+        }
+
+        /**
+         * Saves data to localStorage.
+         */
+        function saveExamPrepData() {
+            localStorage.setItem('examPrepData', JSON.stringify(examPrepData));
+        }
+
+        /**
+         * Generates a unique ID.
+         */
+        function generateUniqueId() {
+            return '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // --- Exams Logic ---
+        addExamBtn.addEventListener('click', () => {
+            const name = examNameInput.value.trim();
+            const date = examDateInput.value; //YYYY-MM-DD format
+
+            if (!name || !date) {
+                showMessage(reminderMessageBox, 'error', 'Please enter both exam name and date.');
+                return;
+            }
+
+            const examDate = new Date(date);
+            // Normalize examDate to UTC midnight for consistent comparison
+            examDate.setUTCHours(0, 0, 0, 0);
+
+            const today = new Date();
+            // Normalize today to UTC midnight for consistent comparison
+            today.setUTCHours(0, 0, 0, 0);
+
+            if (examDate.getTime() < today.getTime()) { // Compare getTime() for robustness
+                showMessage(reminderMessageBox, 'error', 'Exam date cannot be in the past.');
+                return;
+            }
+
+            examPrepData.exams.push({
+                id: generateUniqueId(),
+                name: name,
+                date: date
+            });
+            saveExamPrepData();
+            renderExams();
+            renderCalendar(); // Update calendar with new exam
+            updateStudySuggestion();
+            examNameInput.value = '';
+            examDateInput.value = '';
+            showMessage(reminderMessageBox, 'success', `Exam "${name}" added!`, true);
+        });
+
+        function renderExams() {
+            examsList.innerHTML = '';
+            if (examPrepData.exams.length === 0) {
+                examsList.innerHTML = '<p class="text-gray-400">No exams added yet.</p>';
+                return;
+            }
+
+            examPrepData.exams.sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date
+
+            examPrepData.exams.forEach(exam => {
+                const examDiv = document.createElement('div');
+                examDiv.classList.add('exam-item');
+                examDiv.setAttribute('data-id', exam.id);
+
+                const detailsDiv = document.createElement('div');
+                detailsDiv.classList.add('details');
+
+                const nameSpan = document.createElement('span');
+                nameSpan.classList.add('name');
+                nameSpan.textContent = exam.name;
+                detailsDiv.appendChild(nameSpan);
+
+                const countdownSpan = document.createElement('span');
+                countdownSpan.classList.add('countdown');
+                countdownSpan.setAttribute('data-exam-date', exam.date); // Store date for live update
+                detailsDiv.appendChild(countdownSpan);
+
+                examDiv.appendChild(detailsDiv);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.title = `Delete ${exam.name}`;
+                deleteBtn.addEventListener('click', () => deleteItem('exam', exam.id));
+                examDiv.appendChild(deleteBtn);
+
+                examsList.appendChild(examDiv);
+            });
+            updateAllCountdowns(); // Initial update for all countdowns
+        }
+
+        // Function to calculate and format countdown
+        function calculateDetailedCountdown(dateString) {
+            const targetDate = new Date(dateString);
+            const now = new Date();
+            const diff = targetDate.getTime() - now.getTime(); // Difference in milliseconds
+
+            if (diff <= 0) {
+                // If the date has passed or is today
+                const targetDay = new Date(targetDate);
+                targetDay.setHours(0, 0, 0, 0); // Normalize to local midnight
+                const todayMidnight = new Date();
+                todayMidnight.setHours(0, 0, 0, 0); // Normalize to local midnight
+
+                if (targetDay.getTime() === todayMidnight.getTime()) {
+                    return '(Today!)';
+                } else {
+                    return '(Passed)';
+                }
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            let countdownStr = '';
+            if (days > 0) countdownStr += `${days}d `;
+            if (hours > 0 || days > 0) countdownStr += `${hours}h `; // Show hours if days > 0 or hours > 0
+            if (minutes > 0 || hours > 0 || days > 0) countdownStr += `${minutes}m `; // Show minutes if hours > 0 or minutes > 0
+            countdownStr += `${seconds}s`;
+
+            return `(${countdownStr.trim()} left)`;
+        }
+
+        // Function to update all exam and bookmark countdowns
+        function updateAllCountdowns() {
+            document.querySelectorAll('#exams-list .exam-item .countdown').forEach(span => {
+                const examDateString = span.getAttribute('data-exam-date');
+                span.textContent = calculateDetailedCountdown(examDateString);
+            });
+             document.querySelectorAll('#bookmarks-list .bookmark-item .countdown').forEach(span => {
+                const bookmarkDateString = span.getAttribute('data-bookmark-date');
+                span.textContent = calculateDetailedCountdown(bookmarkDateString);
+            });
+        }
+
+        // Set up interval to update countdowns every second
+        setInterval(updateAllCountdowns, 1000);
+
+
+        // --- Topics Logic ---
+        addTopicBtn.addEventListener('click', () => {
+            const name = topicNameInput.value.trim();
+            if (!name) {
+                showMessage(reminderMessageBox, 'error', 'Please enter a topic name.');
+                return;
+            }
+
+            examPrepData.topics.push({
+                id: generateUniqueId(),
+                name: name,
+                completed: false
+            });
+            saveExamPrepData();
+            renderTopics();
+            updateStudySuggestion();
+            topicNameInput.value = '';
+            showMessage(reminderMessageBox, 'success', `Topic "${name}" added!`, true);
+        });
+
+        function renderTopics() {
+            topicsList.innerHTML = '';
+            if (examPrepData.topics.length === 0) {
+                topicsList.innerHTML = '<p class="text-gray-400">No topics added yet.</p>';
+                updateTopicProgress();
+                return;
+            }
+
+            examPrepData.topics.forEach(topic => {
+                const topicDiv = document.createElement('div');
+                topicDiv.classList.add('topic-item');
+                topicDiv.setAttribute('data-id', topic.id);
+                if (topic.completed) {
+                    topicDiv.classList.add('completed');
+                }
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = topic.completed;
+                checkbox.addEventListener('change', () => toggleTopicComplete(topic.id));
+                topicDiv.appendChild(checkbox);
+
+                const nameSpan = document.createElement('span');
+                nameSpan.classList.add('topic-name');
+                nameSpan.textContent = topic.name;
+                topicDiv.appendChild(nameSpan);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.title = `Delete ${topic.name}`;
+                deleteBtn.addEventListener('click', () => deleteItem('topic', topic.id));
+                topicDiv.appendChild(deleteBtn);
+
+                topicsList.appendChild(topicDiv);
+            });
+            updateTopicProgress();
+        }
+
+        function toggleTopicComplete(id) {
+            const topic = examPrepData.topics.find(t => t.id === id);
+            if (topic) {
+                topic.completed = !topic.completed;
+                saveExamPrepData();
+                renderTopics();
+                updateStudySuggestion();
+                showMessage(reminderMessageBox, 'info', `Topic "${topic.name}" marked as ${topic.completed ? 'completed' : 'incomplete'}.`, true);
+            }
+        }
+
+        function updateTopicProgress() {
+            const totalTopics = examPrepData.topics.length;
+            const completedTopics = examPrepData.topics.filter(t => t.completed).length;
+            const percentage = totalTopics === 0 ? 0 : Math.round((completedTopics / totalTopics) * 100);
+
+            topicProgressPercentage.textContent = `${percentage}%`;
+            topicProgressBar.style.width = `${percentage}%`;
+        }
+
+        // --- Study Suggestion Logic ---
+        function updateStudySuggestion() {
+            const totalTopics = examPrepData.topics.length;
+            const uncompletedTopics = examPrepData.topics.filter(t => !t.completed).length;
+
+            if (examPrepData.exams.length === 0 || uncompletedTopics === 0) {
+                studySuggestionOutput.innerHTML = '<p class="text-gray-400">Add exams and topics to get a study suggestion.</p>';
+                return;
+            }
+
+            // Find the closest upcoming exam
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const upcomingExams = examPrepData.exams.filter(exam => {
+                const examDate = new Date(exam.date);
+                examDate.setUTCHours(0, 0, 0, 0); // Normalize to UTC midnight
+                return examDate.getTime() >= today.getTime();
+            });
+            if (upcomingExams.length === 0) {
+                studySuggestionOutput.innerHTML = '<p class="text-gray-400">No upcoming exams to base a study suggestion on.</p>';
+                return;
+            }
+
+            upcomingExams.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            const closestExam = upcomingExams[0];
+            const daysLeft = Math.ceil((new Date(closestExam.date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+            if (daysLeft <= 0) {
+                studySuggestionOutput.innerHTML = `<p class="text-gray-400">The exam "${closestExam.name}" is today or has passed. Good luck!</p>`;
+                return;
+            }
+
+            const topicsPerDay = (uncompletedTopics / daysLeft).toFixed(1);
+
+            studySuggestionOutput.innerHTML = `
+                <p>For <strong>"${closestExam.name}"</strong> (in ${daysLeft} days), you have <strong>${uncompletedTopics} topics</strong> remaining.</p>
+                <p>Aim to study approximately <strong>${topicsPerDay} topics per day</strong> to finish on time.</p>
+            `;
+        }
+
+        // --- Bookmarks Logic ---
+        addBookmarkBtn.addEventListener('click', () => {
+            const name = bookmarkNameInput.value.trim();
+            const date = bookmarkDateInput.value;
+
+            if (!name || !date) {
+                showMessage(reminderMessageBox, 'error', 'Please enter both bookmark name and date.');
+                return;
+            }
+
+            const bookmarkDate = new Date(date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (bookmarkDate < today) {
+                showMessage(reminderMessageBox, 'error', 'Bookmark date cannot be in the past.');
+                return;
+            }
+
+            examPrepData.bookmarks.push({
+                id: generateUniqueId(),
+                name: name,
+                date: date
+            });
+            saveExamPrepData();
+            renderBookmarks();
+            renderCalendar(); // Update calendar with new bookmark
+            bookmarkNameInput.value = '';
+            bookmarkDateInput.value = '';
+            showMessage(reminderMessageBox, 'success', `Bookmark "${name}" added!`, true);
+        });
+
+        function renderBookmarks() {
+            bookmarksList.innerHTML = '';
+            if (examPrepData.bookmarks.length === 0) {
+                bookmarksList.innerHTML = '<p class="text-gray-400">No bookmarked events yet.</p>';
+                return;
+            }
+
+            examPrepData.bookmarks.sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date
+
+            examPrepData.bookmarks.forEach(bookmark => {
+                const bookmarkDiv = document.createElement('div');
+                bookmarkDiv.classList.add('bookmark-item');
+                bookmarkDiv.setAttribute('data-id', bookmark.id);
+
+                const detailsDiv = document.createElement('div');
+                detailsDiv.classList.add('details');
+
+                const nameSpan = document.createElement('span');
+                nameSpan.classList.add('name');
+                nameSpan.textContent = bookmark.name;
+                detailsDiv.appendChild(nameSpan);
+
+                const countdownSpan = document.createElement('span');
+                countdownSpan.classList.add('countdown');
+                countdownSpan.setAttribute('data-bookmark-date', bookmark.date); // Store date for live update
+                detailsDiv.appendChild(countdownSpan);
+
+                bookmarkDiv.appendChild(detailsDiv);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.title = `Delete ${bookmark.name}`;
+                deleteBtn.addEventListener('click', () => deleteItem('bookmark', bookmark.id));
+                bookmarkDiv.appendChild(deleteBtn);
+
+                bookmarksList.appendChild(bookmarkDiv);
+            });
+            updateAllCountdowns(); // Initial update for all countdowns
+        }
+
+        // --- General Delete Function ---
+        function deleteItem(type, id) {
+            if (type === 'exam') {
+                examPrepData.exams = examPrepData.exams.filter(item => item.id !== id);
+                renderExams();
+                updateStudySuggestion();
+                renderCalendar();
+                showMessage(reminderMessageBox, 'info', 'Exam deleted.', true);
+            } else if (type === 'topic') {
+                examPrepData.topics = examPrepData.topics.filter(item => item.id !== id);
+                renderTopics();
+                updateStudySuggestion();
+                showMessage(reminderMessageBox, 'info', 'Topic deleted.', true);
+            } else if (type === 'bookmark') {
+                examPrepData.bookmarks = examPrepData.bookmarks.filter(item => item.id !== id);
+                renderBookmarks();
+                renderCalendar();
+                showMessage(reminderMessageBox, 'info', 'Bookmark deleted.', true);
+            }
+            saveExamPrepData();
+        }
+
+        // --- Calendar Logic ---
+        let currentCalendarDate = new Date(); // Tracks the month displayed in the calendar
+
+        function renderCalendar() {
+            calendarGrid.innerHTML = `
+                <div class="day-name">Sun</div>
+                <div class="day-name">Mon</div>
+                <div class="day-name">Tue</div>
+                <div class="day-name">Wed</div>
+                <div class="day-name">Thu</div>
+                <div class="day-name">Fri</div>
+                <div class="day-name">Sat</div>
+            `; // Reset grid and add day names
+
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth(); // 0-indexed
+
+            currentMonthYearSpan.textContent = `${currentCalendarDate.toLocaleString('default', { month: 'long' })} ${year}`;
+
+            // Get the first day of the month (0 = Sunday, 6 = Saturday)
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            // Get the number of days in the current month
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Add empty cells for days before the 1st of the month
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.classList.add('day-cell', 'other-month');
+                calendarGrid.appendChild(emptyCell);
+            }
+
+            // Add day cells for the current month
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.classList.add('day-cell', 'current-month');
+                dayCell.textContent = day;
+
+                const currentDate = new Date(year, month, day);
+                currentDate.setHours(0, 0, 0, 0);
+
+                if (currentDate.getTime() === today.getTime()) {
+                    dayCell.classList.add('today');
+                }
+
+                // Check for events on this date
+                const eventsOnThisDay = getEventsForDate(currentDate);
+                if (eventsOnThisDay.length > 0) {
+                    dayCell.classList.add('has-event');
+                    dayCell.title = eventsOnThisDay.map(e => e.name).join(', '); // Tooltip
+                    dayCell.addEventListener('click', () => showCalendarEventDetails(eventsOnThisDay, currentDate));
+                }
+
+                calendarGrid.appendChild(dayCell);
+            }
+        }
+
+        function getEventsForDate(date) {
+            const dateString = date.toISOString().split('T')[0]; //YYYY-MM-DD
+            const events = [];
+            examPrepData.exams.forEach(exam => {
+                if (exam.date === dateString) {
+                    events.push({ type: 'Exam', name: exam.name });
+                }
+            });
+            examPrepData.bookmarks.forEach(bookmark => {
+                if (bookmark.date === dateString) {
+                    events.push({ type: 'Bookmark', name: bookmark.name });
+                }
+            });
+            return events;
+        }
+
+        function showCalendarEventDetails(events, date) {
+            let detailsHtml = `<strong>Events on ${date.toDateString()}:</strong><br>`;
+            if (events.length > 0) {
+                events.forEach(event => {
+                    detailsHtml += `• ${event.type}: ${event.name}<br>`;
+                });
+            } else {
+                detailsHtml += 'No events.';
+            }
+            showMessage(calendarEventDetails, 'info', detailsHtml, true);
+        }
+
+        prevMonthBtn.addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        nextMonthBtn.addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        // --- Reminder System ---
+        function checkReminders() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalize to local midnight
+
+            const oneDayFromNow = new Date(today);
+            oneDayFromNow.setDate(today.getDate() + 1);
+            oneDayFromNow.setHours(0, 0, 0, 0);
+
+            const twoDaysFromNow = new Date(today);
+            twoDaysFromNow.setDate(today.getDate() + 2);
+            twoDaysFromNow.setHours(0, 0, 0, 0);
+
+            const sevenDaysFromNow = new Date(today);
+            sevenDaysFromNow.setDate(today.getDate() + 7);
+            sevenDaysFromNow.setHours(0, 0, 0, 0);
+
+            let remindersFound = [];
+
+            // Check exams
+            examPrepData.exams.forEach(exam => {
+                const examDate = new Date(exam.date);
+                examDate.setHours(0, 0, 0, 0); // Normalize exam date to local midnight
+
+                if (examDate.getTime() === today.getTime()) {
+                    remindersFound.push(`🔔 Exam Today: ${exam.name}! Good luck!`);
+                } else if (examDate.getTime() === oneDayFromNow.getTime()) {
+                    remindersFound.push(`⏰ Reminder: ${exam.name} is in 1 day!`);
+                } else if (examDate.getTime() === twoDaysFromNow.getTime()) {
+                    remindersFound.push(`⏰ Reminder: ${exam.name} is in 2 days!`);
+                } else if (examDate.getTime() === sevenDaysFromNow.getTime()) {
+                    remindersFound.push(`⏰ Reminder: ${exam.name} is in 7 days!`);
+                }
+            });
+
+            // Check bookmarks (existing logic)
+            examPrepData.bookmarks.forEach(bookmark => {
+                const bookmarkDate = new Date(bookmark.date);
+                bookmarkDate.setHours(0, 0, 0, 0);
+
+                if (bookmarkDate.getTime() === today.getTime()) {
+                    remindersFound.push(`🔔 Event Today: ${bookmark.name}!`);
+                } else if (bookmarkDate.getTime() === twoDaysFromNow.getTime()) {
+                    remindersFound.push(`⏰ Reminder: ${bookmark.name} is in 2 days!`);
+                }
+            });
+
+            if (remindersFound.length > 0) {
+                const reminderMessage = remindersFound.join('<br>');
+                showMessage(reminderMessageBox, 'warning', reminderMessage, false);
+                playReminderSound();
+                requestNotificationPermission(reminderMessage);
+            }
+        }
+
+        function playReminderSound() {
+            reminderSound.play().catch(e => console.error("Error playing reminder sound:", e));
+        }
+
+        function requestNotificationPermission(message) {
+            if (!("Notification" in window)) {
+                console.warn("This browser does not support desktop notification");
+            } else if (Notification.permission === "granted") {
+                new Notification("Exam Prep Reminder", {
+                    body: message.replace(/<br>/g, '\n'), // Remove HTML for notification body
+                    icon: 'https://placehold.co/64x64/6366f1/ffffff?text=EP' // Simple icon
+                });
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(function (permission) {
+                    if (permission === "granted") {
+                        new Notification("Exam Prep Reminder", {
+                            body: message.replace(/<br>/g, '\n'),
+                            icon: 'https://placehold.co/64x64/6366f1/ffffff?text=EP'
+                        });
+                    }
+                });
+            }
+        }
+
+        // Check reminders every hour (or more frequently for testing)
+        // For production, consider checking once a day at a specific time.
+        setInterval(checkReminders, 3600000); // Every hour (3600000 ms)
+        // For testing, you might use a shorter interval: setInterval(checkReminders, 10000); // Every 10 seconds
+
+
+        // --- New Study Tracker & Spinner Data Structure ---
+        let studyTrackerData = {
+            subjects: [], // { id: string, name: string }
+            studyLogs: [], // { subjectId: string, hours: number, date: string (YYYY-MM-DD) }
+            spinnerTopics: [] // { id: string, name: string }
+        };
+
+        // --- DOM Elements for Study Tracker ---
+        const newSubjectInput = document.getElementById('new-subject-input');
+        const addSubjectBtn = document.getElementById('add-subject-btn');
+        const studySubjectSelect = document.getElementById('study-subject-select');
+        const studyHoursInput = document.getElementById('study-hours-input');
+        const logStudyHoursBtn = document.getElementById('log-study-hours-btn');
+        const motivationalMessage = document.getElementById('motivational-message');
+        const totalStudyHoursSpan = document.getElementById('total-study-hours');
+        const avgStudyHoursSpan = document.getElementById('avg-study-hours');
+        const studyProgressChartCanvas = document.getElementById('study-progress-chart');
+        const studyLogList = document.getElementById('study-log'); // Added for study log list
+        const timeRangeButtons = document.querySelectorAll('.time-range-btn'); // Still select all, but only '7D' will be in HTML
+
+        // New elements for chart toggle
+        const toggleStudyChartBtn = document.getElementById('toggle-study-chart-btn');
+        const studyChartContent = document.getElementById('study-chart-content');
+
+        // --- DOM Elements for Spinner ---
+        const newTopicSpinnerInput = document.getElementById('new-topic-spinner-input');
+        const addTopicSpinnerBtn = document.getElementById('add-topic-spinner-btn');
+        const spinnerTopicsList = document.getElementById('spinner-topics-list');
+        const spinnerWheelContainer = document.getElementById('spinner-wheel-container');
+        const spinnerWheel = document.getElementById('spinner-wheel');
+        const spinButton = document.getElementById('spin-button');
+        const selectedTopicDisplay = document.getElementById('selected-topic-display'); // Kept for potential persistent display below spinner
+
+        // New message box element for pop-ups
+        const popupMessageBox = document.createElement('div');
+        popupMessageBox.id = 'popup-message-box';
+        popupMessageBox.classList.add('popup-message-box', 'hidden');
+        document.body.appendChild(popupMessageBox);
+
+
+        let studyChart = null; // To hold the Chart.js instance
+
+        // --- Study Tracker Functions ---
+
+        function loadStudyTrackerData() {
+            const savedData = localStorage.getItem('studyTrackerData');
+            if (savedData) {
+                studyTrackerData = JSON.parse(savedData);
+            }
+        }
+
+        function saveStudyTrackerData() {
+            localStorage.setItem('studyTrackerData', JSON.stringify(studyTrackerData));
+        }
+
+        function renderSubjectsDropdown() {
+            studySubjectSelect.innerHTML = '<option value="">Select a Subject</option>';
+            if (studyTrackerData.subjects.length === 0) {
+                // If no subjects, disable logging and show message
+                logStudyHoursBtn.disabled = true;
+                studyHoursInput.disabled = true;
+                studySubjectSelect.disabled = true;
+                showMessage(motivationalMessage, 'info', 'Add a subject first to log hours!', true);
+            } else {
+                logStudyHoursBtn.disabled = false;
+                studyHoursInput.disabled = false;
+                studySubjectSelect.disabled = false;
+            }
+
+            studyTrackerData.subjects.forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject.id;
+                option.textContent = subject.name;
+                studySubjectSelect.appendChild(option);
+            });
+        }
+
+        addSubjectBtn.addEventListener('click', () => {
+            const subjectName = newSubjectInput.value.trim();
+            if (subjectName && !studyTrackerData.subjects.some(s => s.name.toLowerCase() === subjectName.toLowerCase())) {
+                studyTrackerData.subjects.push({ id: generateUniqueId(), name: subjectName });
+                saveStudyTrackerData();
+                renderSubjectsDropdown();
+                newSubjectInput.value = '';
+                showMessage(motivationalMessage, 'success', `Subject "${subjectName}" added!`, true);
+            } else if (studyTrackerData.subjects.some(s => s.name.toLowerCase() === subjectName.toLowerCase())) {
+                showMessage(motivationalMessage, 'error', `Subject "${subjectName}" already exists.`, true);
+            } else {
+                showMessage(motivationalMessage, 'error', 'Please enter a subject name.', true);
+            }
+        });
+
+        logStudyHoursBtn.addEventListener('click', () => {
+            const subjectId = studySubjectSelect.value;
+            const hours = parseFloat(studyHoursInput.value);
+            const today = new Date().toISOString().split('T')[0]; //YYYY-MM-DD
+
+            if (!subjectId) {
+                showMessage(motivationalMessage, 'error', 'Please select a subject.', true);
+                return;
+            }
+            if (isNaN(hours) || hours <= 0) {
+                showMessage(motivationalMessage, 'error', 'Please enter valid hours (e.g., 2.5).', true);
+                return;
+            }
+
+            studyTrackerData.studyLogs.push({ subjectId, hours, date: today });
+            saveStudyTrackerData();
+            studyHoursInput.value = '';
+            showMessage(motivationalMessage, 'success', 'Hours logged! Keep up the great work! 🔥', true);
+            updateStudyStats();
+            updateStudyChart(7); // Always update with 7 days
+            renderStudyLog(); // Re-render the study log list
+        });
+
+        function updateStudyStats() {
+            const totalHours = studyTrackerData.studyLogs.reduce((sum, log) => sum + log.hours, 0);
+            totalStudyHoursSpan.textContent = totalHours.toFixed(1);
+
+            // Calculate total unique days with study logs
+            const uniqueDates = new Set(studyTrackerData.studyLogs.map(log => log.date));
+            const totalDays = uniqueDates.size;
+            avgStudyHoursSpan.textContent = totalDays > 0 ? (totalHours / totalDays).toFixed(1) : '0';
+        }
+
+        function renderStudyLog() {
+            studyLogList.innerHTML = ''; // Clear existing entries
+            if (studyTrackerData.studyLogs.length === 0) {
+                studyLogList.innerHTML = '<p class="text-gray-400 text-sm">No study entries yet.</p>';
+                return;
+            }
+
+            // Group logs by date and then by subject for display
+            const groupedLogs = {};
+            studyTrackerData.studyLogs.forEach(log => {
+                if (!groupedLogs[log.date]) {
+                    groupedLogs[log.date] = {};
+                }
+                const subjectName = studyTrackerData.subjects.find(s => s.id === log.subjectId)?.name || 'Unknown Subject';
+                if (!groupedLogs[log.date][subjectName]) {
+                    groupedLogs[log.date][subjectName] = 0;
+                }
+                groupedLogs[log.date][subjectName] += log.hours;
+            });
+
+            // Sort dates descending
+            const sortedDates = Object.keys(groupedLogs).sort((a, b) => new Date(b) - new Date(a));
+
+            sortedDates.forEach(date => {
+                const dateHeader = document.createElement('li');
+                dateHeader.classList.add('font-semibold', 'text-primary-color', 'mt-2', 'mb-1');
+                dateHeader.textContent = new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                studyLogList.appendChild(dateHeader);
+
+                for (const subjectName in groupedLogs[date]) {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('flex', 'justify-between', 'items-center', 'text-sm', 'text-gray-300', 'ml-4');
+                    listItem.innerHTML = `
+                        <span>${subjectName}:</span>
+                        <span>${groupedLogs[date][subjectName].toFixed(1)} hours</span>
+                    `;
+                    studyLogList.appendChild(listItem);
+                }
+            });
+        }
+
+
+        function getChartColors() {
+            const rootStyles = getComputedStyle(document.documentElement);
+            return {
+                textColor: rootStyles.getPropertyValue('--text-light').trim(),
+                gridColor: rootStyles.getPropertyValue('--border-color').trim(),
+                primaryColor: rootStyles.getPropertyValue('--primary-color').trim(),
+                secondaryColor: rootStyles.getPropertyValue('--secondary-color').trim()
+            };
+        }
+
+        function initStudyChart() {
+            const ctx = studyProgressChartCanvas.getContext('2d');
+            const colors = getChartColors();
+
+            studyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { color: colors.gridColor + '20' }, // Add transparency
+                            ticks: { color: colors.textColor }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Hours',
+                                color: colors.textColor
+                            },
+                            grid: { color: colors.gridColor + '20' }, // Add transparency
+                            ticks: { color: colors.textColor }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: colors.textColor
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y + ' hours';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateStudyChart(timeRange = 7) { // Default to 7 days
+            if (!studyChart) { // Initialize if not already
+                initStudyChart();
+            }
+
+            const endDate = new Date();
+            endDate.setHours(0, 0, 0, 0);
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - timeRange + 1);
+            startDate.setHours(0, 0, 0, 0);
+
+            const labels = [];
+            const dataBySubject = {}; // { subjectName: [hours_day1, hours_day2, ...] }
+
+            // Initialize labels (dates) and data structures for all subjects
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                labels.push(d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }));
+            }
+            studyTrackerData.subjects.forEach(subject => {
+                dataBySubject[subject.name] = new Array(timeRange).fill(0);
+            });
+
+
+            // Populate data
+            studyTrackerData.studyLogs.forEach(log => {
+                const logDate = new Date(log.date);
+                logDate.setHours(0, 0, 0, 0); // Normalize to local midnight
+                if (logDate >= startDate && logDate <= endDate) {
+                    const dayIndex = Math.floor((logDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                    const subject = studyTrackerData.subjects.find(s => s.id === log.subjectId); // Get the subject object
+                    if (subject && dataBySubject[subject.name]) { // Check if subject and its name exist
+                        dataBySubject[subject.name][dayIndex] += log.hours;
+                    } else {
+                        console.warn(`Study log found for non-existent subject ID: ${log.subjectId}`);
+                    }
+                }
+            });
+
+            const colorsForSubjects = {};
+            const baseHue = 0; // Starting hue for colors
+            studyTrackerData.subjects.forEach((subject, index) => {
+                // Generate a distinct color for each subject
+                const hue = (baseHue + (index * 137)) % 360; // Use a prime number for better distribution
+                const saturation = 70 + Math.random() * 20; // 70-90%
+                const lightness = 40 + Math.random() * 20; // 40-60%
+                colorsForSubjects[subject.name] = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            });
+
+            const datasets = Object.keys(dataBySubject).map((subjectName) => ({
+                label: subjectName,
+                data: dataBySubject[subjectName],
+                backgroundColor: colorsForSubjects[subjectName],
+                borderColor: colorsForSubjects[subjectName],
+                borderWidth: 1,
+                fill: false,
+                tension: 0.3 // Smooth lines
+            }));
+
+            studyChart.data.labels = labels;
+            studyChart.data.datasets = datasets;
+
+            // Update chart colors based on current theme
+            const colors = getChartColors();
+            if (studyChart.options.scales.x) studyChart.options.scales.x.grid.color = colors.gridColor + '20';
+            if (studyChart.options.scales.x) studyChart.options.scales.x.ticks.color = colors.textColor;
+            if (studyChart.options.scales.y) studyChart.options.scales.y.grid.color = colors.gridColor + '20';
+            if (studyChart.options.scales.y) studyChart.options.scales.y.ticks.color = colors.textColor;
+            if (studyChart.options.scales.y.title) studyChart.options.scales.y.title.color = colors.textColor;
+            if (studyChart.options.plugins.legend) studyChart.options.plugins.legend.labels.color = colors.textColor;
+
+
+            studyChart.update();
+        }
+
+        function updateChartColors() {
+            if (studyChart) {
+                updateStudyChart(7); // Re-render chart with current data and new colors
+            }
+        }
+
+        // Toggle Study Chart Visibility (for mobile)
+        if (toggleStudyChartBtn) {
+            toggleStudyChartBtn.addEventListener('click', () => {
+                studyChartContent.classList.toggle('hidden');
+                if (studyChartContent.classList.contains('hidden')) {
+                    toggleStudyChartBtn.textContent = 'View More';
+                } else {
+                    toggleStudyChartBtn.textContent = 'View Less';
+                    // Ensure chart re-renders correctly when made visible
+                    if (studyChart) {
+                        studyChart.resize(); // Force Chart.js to redraw
+                    }
+                }
+            });
+        }
+
+
+        // --- Spinner Functions ---
+
+        function renderSpinnerTopics() {
+            spinnerTopicsList.innerHTML = '';
+            if (studyTrackerData.spinnerTopics.length === 0) {
+                spinnerTopicsList.innerHTML = '<p class="text-gray-400 text-sm">No topics added for spinner.</p>';
+                spinButton.disabled = true;
+                spinnerWheel.style.background = 'none'; // Clear background if no topics
+                // Remove all existing text labels
+                spinnerWheelContainer.querySelectorAll('.spinner-text-label').forEach(label => label.remove());
+                spinnerWheel.style.transform = 'rotate(0deg)';
+                selectedTopicDisplay.classList.add('hidden');
+                return;
+            }
+            spinButton.disabled = false;
+
+            studyTrackerData.spinnerTopics.forEach(topic => {
+                const topicDiv = document.createElement('li'); // Changed to li for proper list structure
+                topicDiv.classList.add('flex', 'justify-between', 'items-center', 'text-sm', 'text-gray-300', 'mb-1');
+                topicDiv.setAttribute('data-id', topic.id);
+
+                const nameSpan = document.createElement('span');
+                nameSpan.classList.add('topic-name');
+                nameSpan.textContent = topic.name;
+                topicDiv.appendChild(nameSpan);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-btn', 'text-red-500', 'hover:text-red-700', 'text-sm');
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>'; // Using font-awesome icon
+                deleteBtn.title = `Delete ${topic.name}`;
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent event bubbling
+                    deleteSpinnerTopic(topic.id);
+                });
+                topicDiv.appendChild(deleteBtn);
+
+                spinnerTopicsList.appendChild(topicDiv);
+            });
+
+            renderSpinnerWheel(); // Call to render the spinner wheel with topics
+        }
+
+        function deleteSpinnerTopic(id) {
+            studyTrackerData.spinnerTopics = studyTrackerData.spinnerTopics.filter(t => t.id !== id);
+            saveStudyTrackerData();
+            renderSpinnerTopics(); // Re-render topics list and spinner wheel
+            showMessage(motivationalMessage, 'info', 'Topic removed from spinner.', true);
+        }
+
+
+        addTopicSpinnerBtn.addEventListener('click', () => {
+            const topicName = newTopicSpinnerInput.value.trim();
+            if (topicName && !studyTrackerData.spinnerTopics.some(t => t.name.toLowerCase() === topicName.toLowerCase())) {
+                studyTrackerData.spinnerTopics.push({ id: generateUniqueId(), name: topicName });
+                saveStudyTrackerData();
+                renderSpinnerTopics();
+                newTopicSpinnerInput.value = '';
+                showMessage(motivationalMessage, 'success', `Topic "${topicName}" added to spinner!`, true);
+            } else if (studyTrackerData.spinnerTopics.some(t => t.name.toLowerCase() === topicName.toLowerCase())) {
+                showMessage(motivationalMessage, 'error', `Topic "${topicName}" already exists in spinner.`, true);
+            } else {
+                showMessage(motivationalMessage, 'error', 'Please enter a topic name.', true);
+            }
+        });
+
+        // Function to generate distinct HSL colors for spinner slices
+        function getDistinctSpinnerColors(numColors) {
+            const colors = [];
+            const goldenRatioConjugate = 0.618033988749895;
+            let h = Math.random(); // Start with a random hue
+
+            for (let i = 0; i < numColors; i++) {
+                h = (h + goldenRatioConjugate) % 1;
+                const hue = Math.floor(h * 360);
+                // Use varying lightness and saturation for better contrast in light/dark modes
+                const saturation = 70 + Math.random() * 20; // 70-90%
+                const lightness = 40 + Math.random() * 20; // 40-60%
+                colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
+            }
+            return colors;
+        }
+
+        function renderSpinnerWheel() {
+            // Remove all existing text labels first
+            spinnerWheelContainer.querySelectorAll('.spinner-text-label').forEach(label => label.remove());
+
+            const numTopics = studyTrackerData.spinnerTopics.length;
+            if (numTopics === 0) {
+                spinnerWheel.style.background = 'none'; // Clear background if no topics
+                spinnerWheel.style.transform = 'rotate(0deg)';
+                return;
+            }
+
+            const anglePerSlice = 360 / numTopics;
+            const colors = getDistinctSpinnerColors(numTopics); // Use the distinct color generator
+
+            let gradientString = 'conic-gradient(';
+            let currentAngle = 0;
+
+            studyTrackerData.spinnerTopics.forEach((topic, index) => {
+                const color = colors[index];
+                gradientString += `${color} ${currentAngle}deg ${currentAngle + anglePerSlice}deg`;
+                if (index < numTopics - 1) {
+                    gradientString += ', ';
+                }
+                currentAngle += anglePerSlice;
+
+                // Create text label
+                const textLabel = document.createElement('div');
+                textLabel.classList.add('spinner-text-label');
+                textLabel.textContent = topic.name;
+
+                // Calculate position and rotation for the text
+                const textAngle = (index * anglePerSlice) + (anglePerSlice / 2); // Center of the slice
+                const radiusOffset = 70; // Distance from center for text (adjust as needed, half of wheel radius minus some padding)
+
+                // Position text using trigonometric functions
+                // Convert angle to radians, adjust to start from top (0 degrees at 12 o'clock)
+                const textAngleRad = (textAngle - 90) * (Math.PI / 180);
+                const x = radiusOffset * Math.cos(textAngleRad);
+                const y = radiusOffset * Math.sin(textAngleRad);
+
+                // Apply transform: translate to center, then translate outwards, then rotate for orientation
+                // The text itself will rotate with the wheel, so no counter-rotation is applied to keep it horizontal.
+                // The text will be oriented along the slice.
+                textLabel.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${textAngle}deg)`;
+
+                spinnerWheelContainer.appendChild(textLabel); // Append to container, not spinnerWheel
+            });
+            gradientString += ')';
+            spinnerWheel.style.background = gradientString;
+        }
+
+        /**
+         * Displays a temporary pop-up message.
+         * @param {string} type - 'info', 'success', or 'error' for styling.
+         * @param {string} message - The message text.
+         * @param {number} duration - Duration in milliseconds before auto-hiding.
+         */
+        function showPopupMessage(type, message, duration = 3000) {
+            popupMessageBox.classList.remove('hidden', 'info', 'success', 'error', 'show');
+            popupMessageBox.classList.add(type);
+            popupMessageBox.innerHTML = `<i class="fas fa-info-circle mr-2"></i> ${message}`;
+
+            if (type === 'success') {
+                popupMessageBox.querySelector('i').className = 'fas fa-check-circle mr-2';
+            } else if (type === 'error') {
+                popupMessageBox.querySelector('i').className = 'fas fa-exclamation-triangle mr-2';
+            } else if (type === 'info') {
+                popupMessageBox.querySelector('i').className = 'fas fa-info-circle mr-2';
+            }
+
+            popupMessageBox.classList.add('show');
+
+            setTimeout(() => {
+                popupMessageBox.classList.remove('show');
+                setTimeout(() => {
+                    popupMessageBox.classList.add('hidden');
+                }, 300); // Allow transition to finish before hiding display
+            }, duration);
+        }
+
+        spinButton.addEventListener('click', () => {
+            if (studyTrackerData.spinnerTopics.length === 0) {
+                showMessage(motivationalMessage, 'error', 'Please add topics to the spinner first!', true);
+                return;
+            }
+
+            spinButton.disabled = true;
+            selectedTopicDisplay.classList.add('hidden');
+
+            const numTopics = studyTrackerData.spinnerTopics.length;
+            const degreesPerTopic = 360 / numTopics;
+
+            // Spin multiple full rotations + a random offset to land on a topic
+            const randomTopicIndex = Math.floor(Math.random() * numTopics);
+            // Calculate target angle to point to the center of the selected slice
+            // We add 5 full rotations (1800 degrees) to ensure a good spin animation.
+            // Then we subtract the angle of the selected topic to bring it to the top (0 degrees).
+            // We also subtract half the slice angle to point to the center of the slice.
+            // The +90 is because the pointer is at 12 o'clock (top), which is 90 degrees in CSS transform context if 0 is right.
+            const targetAngle = (360 * 5) + (360 - ((randomTopicIndex * degreesPerTopic) + (degreesPerTopic / 2))) + 90;
+
+
+            spinnerWheel.style.transition = 'transform 4s cubic-bezier(0.25, 0.1, 0.25, 1)'; // Slower, smoother ease-out
+            spinnerWheel.style.transform = `rotate(${targetAngle}deg)`;
+
+            setTimeout(() => {
+                spinnerWheel.style.transition = 'none'; // Reset transition for next spin
+                // Normalize the rotation to keep it within 0-360 for future spins
+                const normalizedAngle = targetAngle % 360;
+                spinnerWheel.style.transform = `rotate(${normalizedAngle}deg)`;
+
+                const selectedTopic = studyTrackerData.spinnerTopics[randomTopicIndex];
+                selectedTopicDisplay.querySelector('span').textContent = selectedTopic.name;
+                selectedTopicDisplay.classList.remove('hidden'); // Still update this for persistent display below spinner if desired
+                showPopupMessage('success', `You should study: <strong>${selectedTopic.name}</strong>!`, 5000); // Show as pop-up
+                spinButton.disabled = false;
+            }, 4000); // Match this timeout to the CSS transition duration
+        });
+
+
+        // --- NEW: Daily Planner & Eisenhower Matrix Logic ---
+        let dailyPlannerData = {
+            plannerTasks: {}, // { "hour-slot-id": { id: string, text: string, completed: boolean, awardedCoins: boolean } }
+            unassignedPlannerTasks: [], // NEW: { id: string, text: string, completed: boolean, awardedCoins: boolean }
+            matrixTasks: [], // { id: string, text: string, quadrant: string, completed: boolean, awardedCoins: boolean }
+            coins: 0, // NEW: Coins for gamification
+            unlockedRewards: [], // NEW: IDs of unlocked rewards
+            dailyReflections: [], // NEW: Array of { date, productivity, distractions, mood }
+            lastResetDate: null // To track daily reset
+        };
+
+        const coinsCountSpan = document.getElementById('coins-count'); // NEW: Coins display element
+        const rewardShopList = document.getElementById('reward-shop-list'); // NEW: Reward shop list
+        const rewardMessage = document.getElementById('reward-message'); // NEW: Reward message box
+        const unlockedQuoteDisplay = document.getElementById('unlocked-quote-display'); // NEW: Unlocked quote display
+
+        const plannerTaskInput = document.getElementById('planner-task-input');
+        const addPlannerTaskBtn = document.getElementById('add-planner-task-btn');
+        const dailyPlannerGrid = document.getElementById('daily-planner-grid');
+        const unassignedPlannerTasksList = document.getElementById('unassigned-planner-tasks-list'); // NEW: Unassigned tasks list element
+        const plannerMessage = document.getElementById('planner-message');
+
+        const matrixTaskInput = document.getElementById('matrix-task-input');
+        const addMatrixTaskBtn = document.getElementById('add-matrix-task-btn');
+        const matrixMessage = document.getElementById('matrix-message');
+        const quadrants = {
+            'urgent-important': document.getElementById('quadrant-urgent-important'),
+            'important-not-urgent': document.getElementById('quadrant-important-not-urgent'),
+            'urgent-not-important': document.getElementById('quadrant-urgent-not-important'),
+            'neither': document.getElementById('quadrant-neither')
+        };
+
+        const endDaySummaryBtn = document.getElementById('end-day-summary-btn'); // NEW: End Day button
+        const dailyReflectionModal = document.getElementById('daily-reflection-modal'); // NEW: Modal element
+        const closeReflectionModalBtn = document.getElementById('close-reflection-modal'); // NEW: Close modal button
+        const productivityPercentageSpan = document.getElementById('productivity-percentage'); // NEW: Productivity display
+        const completedTasksCountSpan = document.getElementById('completed-tasks-count'); // NEW: Completed tasks count
+        const totalTasksCountSpan = document.getElementById('total-tasks-count'); // NEW: Total tasks count
+        const distractionsInput = document.getElementById('distractions-input'); // NEW: Distractions textarea
+        const moodRatingInputs = document.querySelectorAll('input[name="mood-rating"]'); // NEW: Mood radio buttons
+        const submitReflectionBtn = document.getElementById('submit-reflection-btn'); // NEW: Submit reflection button
+        const reflectionTipsDiv = document.getElementById('reflection-tips'); // NEW: Reflection tips display
+
+        const REWARD_COIN_AMOUNT = 5; // Coins awarded per task completion
+        const REWARDS = [
+            { id: 'quote1', type: 'quote', cost: 10, content: "The best way to predict the future is to create it." },
+            { id: 'quote2', type: 'quote', cost: 15, content: "Success is not final, failure is not fatal: it is the courage to continue that counts." },
+            { id: 'quote3', type: 'quote', cost: 20, content: "Believe you can and you're halfway there." },
+            { id: 'quote4', type: 'quote', cost: 25, content: "The only way to do great work is to love what you do." },
+            { id: 'quote5', type: 'quote', cost: 30, content: "Your time is limited, don't waste it living someone else's life." }
+        ];
+
+        // --- Daily Planner Functions ---
+        function loadDailyPlannerData() {
+            const savedData = localStorage.getItem('dailyPlannerData');
+            if (savedData) {
+                dailyPlannerData = JSON.parse(savedData);
+            } else {
+                dailyPlannerData = { // Initialize if no data exists
+                    plannerTasks: {},
+                    unassignedPlannerTasks: [],
+                    matrixTasks: [],
+                    coins: 0,
+                    unlockedRewards: [],
+                    dailyReflections: [],
+                    lastResetDate: null
+                };
+            }
+
+            // Daily reset logic
+            const today = new Date().toISOString().split('T')[0];
+            if (dailyPlannerData.lastResetDate !== today) {
+                // Before resetting, save current day's stats if any tasks were present
+                const totalTasks = Object.keys(dailyPlannerData.plannerTasks).length + dailyPlannerData.unassignedPlannerTasks.length + dailyPlannerData.matrixTasks.length;
+                const completedTasks = Object.values(dailyPlannerData.plannerTasks).filter(t => t.completed).length +
+                                     dailyPlannerData.unassignedPlannerTasks.filter(t => t.completed).length +
+                                     dailyPlannerData.matrixTasks.filter(t => t.completed).length;
+
+                if (totalTasks > 0 || dailyPlannerData.lastResetDate) { // Only record if there were tasks or it's not the very first load
+                    dailyPlannerData.dailyReflections.push({
+                        date: dailyPlannerData.lastResetDate || "N/A", // Use last reset date or N/A for first load
+                        productivity: totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(0) : 0,
+                        distractions: "Not recorded for previous day", // Will be updated by modal
+                        mood: "N/A" // Will be updated by modal
+                    });
+                }
+
+                dailyPlannerData.plannerTasks = {};
+                dailyPlannerData.unassignedPlannerTasks = [];
+                dailyPlannerData.matrixTasks = [];
+                dailyPlannerData.lastResetDate = today;
+                saveDailyPlannerData();
+            }
+        }
+
+        function saveDailyPlannerData() {
+            localStorage.setItem('dailyPlannerData', JSON.stringify(dailyPlannerData));
+            updateCoinsDisplay(); // Ensure coins display is always up-to-date
+        }
+
+        function updateCoinsDisplay() {
+            if (coinsCountSpan) {
+                coinsCountSpan.textContent = dailyPlannerData.coins;
+            }
+        }
+
+        function renderDailyPlanner() {
+            dailyPlannerGrid.innerHTML = ''; // Clear existing slots
+            const startHour = 6; // 6 AM
+            const endHour = 22; // 10 PM (exclusive, so up to 9 PM slot)
+
+            for (let i = startHour; i <= endHour; i++) {
+                const hour = i % 12 === 0 ? 12 : i % 12;
+                const ampm = i < 12 || i === 24 ? 'AM' : 'PM';
+                const timeLabel = `${hour}${ampm}`;
+                const slotId = `hour-${i}`;
+
+                const timeSlotDiv = document.createElement('div');
+                timeSlotDiv.classList.add('planner-time-slot');
+                timeSlotDiv.setAttribute('data-hour-slot', slotId);
+                timeSlotDiv.ondragover = allowDrop;
+                timeSlotDiv.ondrop = dropPlannerTask;
+                timeSlotDiv.ondragleave = leaveDrop; // Add drag leave for visual feedback
+
+                const labelSpan = document.createElement('span');
+                labelSpan.classList.add('planner-time-label');
+                labelSpan.textContent = timeLabel;
+                timeSlotDiv.appendChild(labelSpan);
+
+                const taskDisplayDiv = document.createElement('div');
+                taskDisplayDiv.classList.add('planner-task-display');
+                taskDisplayDiv.id = `task-display-${slotId}`;
+
+                const task = dailyPlannerData.plannerTasks[slotId];
+                if (task) {
+                    const taskItem = createTaskElement(task.id, task.text, 'planner', task.completed);
+                    taskDisplayDiv.appendChild(taskItem);
+                } else {
+                    taskDisplayDiv.textContent = 'Drag task here or add below';
+                }
+                timeSlotDiv.appendChild(taskDisplayDiv);
+                dailyPlannerGrid.appendChild(timeSlotDiv);
+            }
+        }
+
+        addPlannerTaskBtn.addEventListener('click', () => {
+            const taskText = plannerTaskInput.value.trim();
+            if (taskText) {
+                const taskId = generateUniqueId();
+                dailyPlannerData.unassignedPlannerTasks.push({
+                    id: taskId,
+                    text: taskText,
+                    completed: false,
+                    awardedCoins: false // NEW: Track if coins have been awarded
+                });
+                saveDailyPlannerData();
+                renderUnassignedPlannerTasks(); // Render the updated unassigned tasks list
+                plannerTaskInput.value = '';
+                showMessage(plannerMessage, 'success', `Task "${taskText}" added to unassigned list. Drag it to a time slot!`, true);
+            } else {
+                showMessage(plannerMessage, 'error', 'Please enter a task for the planner.', true);
+            }
+        });
+
+        function renderUnassignedPlannerTasks() {
+            unassignedPlannerTasksList.innerHTML = '';
+            if (dailyPlannerData.unassignedPlannerTasks.length === 0) {
+                unassignedPlannerTasksList.innerHTML = '<p class="placeholder">No unassigned tasks. Add one above!</p>';
+                return;
+            }
+
+            dailyPlannerData.unassignedPlannerTasks.forEach(task => {
+                const taskElement = createTaskElement(task.id, task.text, 'unassigned-planner', task.completed);
+                unassignedPlannerTasksList.appendChild(taskElement);
+            });
+        }
+
+        // --- Eisenhower Matrix Functions ---
+        function renderEisenhowerMatrix() {
+            // Clear all quadrants first
+            Object.values(quadrants).forEach(quadrant => {
+                // Keep the title, remove tasks
+                Array.from(quadrant.children).forEach(child => {
+                    if (!child.classList.contains('eisenhower-quadrant-title')) {
+                        child.remove();
+                    }
+                });
+            });
+
+            if (dailyPlannerData.matrixTasks.length === 0) {
+                showMessage(matrixMessage, 'info', 'Add tasks to prioritize them in the matrix.', true);
+            }
+
+            dailyPlannerData.matrixTasks.forEach(task => {
+                const taskElement = createTaskElement(task.id, task.text, 'matrix', task.completed);
+                if (quadrants[task.quadrant]) {
+                    quadrants[task.quadrant].appendChild(taskElement);
+                }
+            });
+        }
+
+        addMatrixTaskBtn.addEventListener('click', () => {
+            const taskText = matrixTaskInput.value.trim();
+            if (taskText) {
+                const taskId = generateUniqueId();
+                const newTask = {
+                    id: taskId,
+                    text: taskText,
+                    quadrant: 'neither', // Default to 'Neither'
+                    completed: false,
+                    awardedCoins: false // NEW: Track if coins have been awarded
+                };
+                dailyPlannerData.matrixTasks.push(newTask);
+                saveDailyPlannerData();
+                renderEisenhowerMatrix();
+                matrixTaskInput.value = '';
+                showMessage(matrixMessage, 'success', `Task "${taskText}" added to 'Neither' quadrant. Drag it to prioritize!`, true);
+            } else {
+                showMessage(matrixMessage, 'error', 'Please enter a task for the matrix.', true);
+            }
+        });
+
+        function createTaskElement(id, text, type, completed) {
+            const taskElement = document.createElement('div');
+            taskElement.classList.add(
+                type === 'planner' || type === 'unassigned-planner' ? 'planner-task-item' : 'eisenhower-task'
+            );
+            if (completed) {
+                taskElement.classList.add('completed');
+            }
+            taskElement.textContent = text;
+            taskElement.setAttribute('draggable', 'true');
+            taskElement.setAttribute('data-id', id);
+            taskElement.setAttribute('data-type', type); // 'planner', 'unassigned-planner', or 'matrix'
+
+            taskElement.ondragstart = drag;
+            taskElement.onclick = (e) => {
+                if (!e.target.classList.contains('delete-btn') && !e.target.closest('.delete-btn')) {
+                    toggleTaskComplete(id, type); // Toggle completion on click, but not on delete button
+                }
+            };
+
+            // Add delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.classList.add('delete-btn');
+            deleteBtn.innerHTML = '<i class="fas fa-times-circle"></i>'; // 'x' icon
+            deleteBtn.title = `Delete ${text}`;
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent toggling completion when deleting
+                deletePlannerTask(id, type);
+            });
+            taskElement.appendChild(deleteBtn);
+
+
+            return taskElement;
+        }
+
+        function toggleTaskComplete(id, type) {
+            let task = null;
+            let messageBox = null;
+
+            if (type === 'planner') {
+                for (const slotId in dailyPlannerData.plannerTasks) {
+                    if (dailyPlannerData.plannerTasks[slotId].id === id) {
+                        task = dailyPlannerData.plannerTasks[slotId];
+                        messageBox = plannerMessage;
+                        break;
+                    }
+                }
+            } else if (type === 'unassigned-planner') {
+                task = dailyPlannerData.unassignedPlannerTasks.find(t => t.id === id);
+                messageBox = plannerMessage;
+            } else if (type === 'matrix') {
+                task = dailyPlannerData.matrixTasks.find(t => t.id === id);
+                messageBox = matrixMessage;
+            }
+
+            if (task) {
+                task.completed = !task.completed;
+                if (task.completed && !task.awardedCoins) {
+                    dailyPlannerData.coins += REWARD_COIN_AMOUNT;
+                    task.awardedCoins = true;
+                    showMessage(messageBox, 'success', `Task "${task.text}" completed! You earned ${REWARD_COIN_AMOUNT} coins! 💰`, true);
+                } else if (!task.completed && task.awardedCoins) {
+                    // Optional: deduct coins if un-completing a task that previously awarded coins
+                    // dailyPlannerData.coins -= REWARD_COIN_AMOUNT;
+                    // task.awardedCoins = false;
+                    showMessage(messageBox, 'info', `Task "${task.text}" marked as incomplete.`, true);
+                } else {
+                    showMessage(messageBox, 'info', `Task "${task.text}" completion toggled.`, true);
+                }
+
+                saveDailyPlannerData();
+                renderDailyPlanner();
+                renderUnassignedPlannerTasks();
+                renderEisenhowerMatrix();
+                updateCoinsDisplay();
+            }
+        }
+
+        function deletePlannerTask(id, type) {
+            if (type === 'planner') {
+                for (const slotId in dailyPlannerData.plannerTasks) {
+                    if (dailyPlannerData.plannerTasks[slotId].id === id) {
+                        delete dailyPlannerData.plannerTasks[slotId];
+                        break;
+                    }
+                }
+                renderDailyPlanner();
+                showMessage(plannerMessage, 'info', 'Scheduled task deleted.', true);
+            } else if (type === 'unassigned-planner') {
+                dailyPlannerData.unassignedPlannerTasks = dailyPlannerData.unassignedPlannerTasks.filter(task => task.id !== id);
+                renderUnassignedPlannerTasks();
+                showMessage(plannerMessage, 'info', 'Unassigned task deleted.', true);
+            } else if (type === 'matrix') {
+                dailyPlannerData.matrixTasks = dailyPlannerData.matrixTasks.filter(task => task.id !== id);
+                renderEisenhowerMatrix();
+                showMessage(matrixMessage, 'info', 'Matrix task deleted.', true);
+            }
+            saveDailyPlannerData();
+        }
+
+
+        // --- Drag and Drop Logic ---
+        let draggedElement = null;
+
+        function drag(event) {
+            draggedElement = event.target;
+            event.dataTransfer.setData('text/plain', draggedElement.dataset.id);
+            event.dataTransfer.setData('text/dragged-type', draggedElement.dataset.type); // Store original type
+            event.dataTransfer.effectAllowed = 'move';
+            draggedElement.classList.add('dragging');
+        }
+
+        function allowDrop(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            if (event.target.classList.contains('eisenhower-quadrant')) {
+                event.target.classList.add('drag-over');
+            } else if (event.target.classList.contains('planner-task-display')) {
+                event.target.classList.add('drag-over');
+            }
+        }
+
+        function leaveDrop(event) {
+            if (event.target.classList.contains('eisenhower-quadrant')) {
+                event.target.classList.remove('drag-over');
+            } else if (event.target.classList.contains('planner-task-display')) {
+                event.target.classList.remove('drag-over');
+            }
+        }
+
+        function dropEisenhowerTask(event) {
+            event.preventDefault();
+            const taskId = event.dataTransfer.getData('text/plain');
+            const draggedType = event.dataTransfer.getData('text/dragged-type');
+            const targetQuadrantElement = event.target.closest('.eisenhower-quadrant');
+
+            if (draggedElement && targetQuadrantElement) {
+                const newQuadrantId = targetQuadrantElement.dataset.quadrant;
+
+                // If dragging from planner to matrix, create a new matrix task
+                if (draggedType === 'planner' || draggedType === 'unassigned-planner') {
+                    const taskText = draggedElement.textContent.replace(/[\u{1F5D1}\u{FE0F}]/gu, '').trim(); // Remove trash icon and trim
+                    const newTask = {
+                        id: generateUniqueId(), // New ID for matrix task
+                        text: taskText,
+                        quadrant: newQuadrantId,
+                        completed: false,
+                        awardedCoins: false
+                    };
+                    dailyPlannerData.matrixTasks.push(newTask);
+                    // Remove from original list
+                    if (draggedType === 'planner') {
+                        for (const slotId in dailyPlannerData.plannerTasks) {
+                            if (dailyPlannerData.plannerTasks[slotId].id === taskId) {
+                                delete dailyPlannerData.plannerTasks[slotId];
+                                break;
+                            }
+                        }
+                        renderDailyPlanner();
+                    } else if (draggedType === 'unassigned-planner') {
+                        dailyPlannerData.unassignedPlannerTasks = dailyPlannerData.unassignedPlannerTasks.filter(task => task.id !== taskId);
+                        renderUnassignedPlannerTasks();
+                    }
+                    showMessage(matrixMessage, 'success', `Task "${taskText}" moved to "${newQuadrantId}" quadrant!`, true);
+
+                } else if (draggedType === 'matrix') {
+                    // If dragging within matrix or from matrix to matrix
+                    const taskIndex = dailyPlannerData.matrixTasks.findIndex(t => t.id === taskId);
+                    if (taskIndex > -1) {
+                        dailyPlannerData.matrixTasks[taskIndex].quadrant = newQuadrantId;
+                        showMessage(matrixMessage, 'success', 'Task moved successfully!', true);
+                    }
+                }
+                saveDailyPlannerData();
+                renderEisenhowerMatrix(); // Re-render to reflect changes
+            }
+            if (draggedElement) draggedElement.classList.remove('dragging');
+            if (targetQuadrantElement) targetQuadrantElement.classList.remove('drag-over');
+        }
+
+        function dropPlannerTask(event) {
+            event.preventDefault();
+            const taskId = event.dataTransfer.getData('text/plain');
+            const draggedType = event.dataTransfer.getData('text/dragged-type');
+            const targetSlotDisplay = event.target.closest('.planner-task-display');
+
+            if (draggedElement && targetSlotDisplay) {
+                const newSlotId = targetSlotDisplay.parentElement.dataset.hourSlot;
+
+                // Check if the slot already has a task
+                if (dailyPlannerData.plannerTasks[newSlotId]) {
+                    showMessage(plannerMessage, 'error', 'This time slot is already occupied. Clear it first.', true);
+                    if (draggedElement) draggedElement.classList.remove('dragging');
+                    if (targetSlotDisplay) targetSlotDisplay.classList.remove('drag-over');
+                    return;
+                }
+
+                let taskToMove = null;
+
+                // Remove task from its original location in plannerData if it was there
+                if (draggedType === 'planner') {
+                    for (const slot in dailyPlannerData.plannerTasks) {
+                        if (dailyPlannerData.plannerTasks[slot].id === taskId) {
+                            taskToMove = dailyPlannerData.plannerTasks[slot];
+                            delete dailyPlannerData.plannerTasks[slot];
+                            break;
+                        }
+                    }
+                } else if (draggedType === 'unassigned-planner') {
+                    const index = dailyPlannerData.unassignedPlannerTasks.findIndex(t => t.id === taskId);
+                    if (index > -1) {
+                        taskToMove = dailyPlannerData.unassignedPlannerTasks[index];
+                        dailyPlannerData.unassignedPlannerTasks.splice(index, 1);
+                    }
+                } else if (draggedType === 'matrix') {
+                    const index = dailyPlannerData.matrixTasks.findIndex(t => t.id === taskId);
+                    if (index > -1) {
+                        taskToMove = dailyPlannerData.matrixTasks[index];
+                        // When moving from matrix to planner, remove it from matrix to avoid duplicates
+                        dailyPlannerData.matrixTasks.splice(index, 1);
+                    }
+                }
+
+                if (taskToMove) {
+                    dailyPlannerData.plannerTasks[newSlotId] = {
+                        id: taskToMove.id,
+                        text: taskToMove.text,
+                        completed: taskToMove.completed,
+                        awardedCoins: taskToMove.awardedCoins
+                    };
+                    saveDailyPlannerData();
+                    renderDailyPlanner(); // Re-render planner to show updated task
+                    renderUnassignedPlannerTasks(); // Re-render unassigned list
+                    renderEisenhowerMatrix(); // Re-render matrix to show task if it was moved from there
+                    showMessage(plannerMessage, 'success', `Task "${taskToMove.text}" scheduled for ${targetSlotDisplay.parentElement.querySelector('.planner-time-label').textContent}!`, true);
+                }
+            }
+            if (draggedElement) draggedElement.classList.remove('dragging');
+            if (targetSlotDisplay) targetSlotDisplay.classList.remove('drag-over');
+        }
+
+        // Add drag/drop event listeners to quadrants
+        Object.values(quadrants).forEach(quadrant => {
+            quadrant.ondragover = allowDrop;
+            quadrant.ondragleave = leaveDrop;
+            quadrant.ondrop = dropEisenhowerTask;
+        });
+
+        // --- Reward Shop Logic ---
+        function renderRewardShop() {
+            rewardShopList.innerHTML = '';
+            REWARDS.forEach(reward => {
+                const rewardItemDiv = document.createElement('div');
+                rewardItemDiv.classList.add('reward-item');
+                if (dailyPlannerData.unlockedRewards.includes(reward.id)) {
+                    rewardItemDiv.classList.add('unlocked');
+                }
+
+                const rewardName = document.createElement('span');
+                rewardName.textContent = reward.type === 'quote' ? `Motivational Quote` : `Reward (${reward.id})`;
+                rewardItemDiv.appendChild(rewardName);
+
+                const rightContent = document.createElement('div');
+                rightContent.classList.add('flex', 'items-center');
+
+                if (!dailyPlannerData.unlockedRewards.includes(reward.id)) {
+                    const costSpan = document.createElement('span');
+                    costSpan.classList.add('cost');
+                    costSpan.innerHTML = `${reward.cost} <i class="fas fa-coins text-yellow-500"></i>`;
+                    rightContent.appendChild(costSpan);
+
+                    const unlockBtn = document.createElement('button');
+                    unlockBtn.classList.add('unlock-btn');
+                    unlockBtn.textContent = 'Unlock';
+                    unlockBtn.disabled = dailyPlannerData.coins < reward.cost;
+                    unlockBtn.addEventListener('click', () => unlockReward(reward.id, reward.cost, reward.content));
+                    rightContent.appendChild(unlockBtn);
+                } else {
+                    const unlockedText = document.createElement('span');
+                    unlockedText.textContent = 'Unlocked!';
+                    unlockedText.classList.add('text-success-color', 'font-semibold');
+                    rightContent.appendChild(unlockedText);
+                }
+
+                rewardItemDiv.appendChild(rightContent);
+                rewardShopList.appendChild(rewardItemDiv);
+            });
+        }
+
+        function unlockReward(rewardId, cost, content) {
+            if (dailyPlannerData.coins >= cost) {
+                dailyPlannerData.coins -= cost;
+                dailyPlannerData.unlockedRewards.push(rewardId);
+                saveDailyPlannerData();
+                renderRewardShop();
+                updateCoinsDisplay();
+                displayUnlockedContent(content);
+                showMessage(rewardMessage, 'success', `Reward unlocked! "${content}"`, true);
+            } else {
+                showMessage(rewardMessage, 'error', `Not enough coins! You need ${cost - dailyPlannerData.coins} more coins.`, true);
+            }
+        }
+
+        function displayUnlockedContent(content) {
+            if (unlockedQuoteDisplay) {
+                unlockedQuoteDisplay.textContent = content;
+                unlockedQuoteDisplay.classList.remove('hidden');
+                setTimeout(() => {
+                    unlockedQuoteDisplay.classList.add('hidden');
+                    unlockedQuoteDisplay.textContent = 'Your unlocked quote will appear here!'; // Reset text
+                }, 10000); // Display for 10 seconds
+            }
+        }
+
+        // --- Daily Reflection Logic ---
+        endDaySummaryBtn.addEventListener('click', () => {
+            let totalTasks = 0;
+            let completedTasks = 0;
+
+            // Count tasks from plannerTasks
+            for (const slotId in dailyPlannerData.plannerTasks) {
+                totalTasks++;
+                if (dailyPlannerData.plannerTasks[slotId].completed) {
+                    completedTasks++;
+                }
+            }
+
+            // Count tasks from unassignedPlannerTasks
+            dailyPlannerData.unassignedPlannerTasks.forEach(task => {
+                totalTasks++;
+                if (task.completed) {
+                    completedTasks++;
+                }
+            });
+
+            // Count tasks from matrixTasks
+            dailyPlannerData.matrixTasks.forEach(task => {
+                totalTasks++;
+                if (task.completed) {
+                    completedTasks++;
+                }
+            });
+
+            const productivity = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(0) : 0;
+
+            productivityPercentageSpan.textContent = `${productivity}%`;
+            completedTasksCountSpan.textContent = completedTasks;
+            totalTasksCountSpan.textContent = totalTasks;
+
+            // Reset modal inputs
+            distractionsInput.value = '';
+            moodRatingInputs.forEach(radio => {
+                if (radio.value === 'neutral') radio.checked = true;
+                else radio.checked = false;
+            });
+            reflectionTipsDiv.classList.add('hidden'); // Hide previous tips
+
+            dailyReflectionModal.classList.add('show');
+        });
+
+        closeReflectionModalBtn.addEventListener('click', () => {
+            dailyReflectionModal.classList.remove('show');
+        });
+
+        submitReflectionBtn.addEventListener('click', () => {
+            const productivity = productivityPercentageSpan.textContent.replace('%', '');
+            const distractions = distractionsInput.value.trim();
+            const mood = document.querySelector('input[name="mood-rating"]:checked')?.value || 'neutral';
+            const today = new Date().toISOString().split('T')[0];
+
+            // Update the most recent reflection entry if it's for today, otherwise add new
+            let existingReflectionIndex = dailyPlannerData.dailyReflections.findIndex(r => r.date === today);
+            if (existingReflectionIndex !== -1) {
+                dailyPlannerData.dailyReflections[existingReflectionIndex].productivity = productivity;
+                dailyPlannerData.dailyReflections[existingReflectionIndex].distractions = distractions;
+                dailyPlannerData.dailyReflections[existingReflectionIndex].mood = mood;
+            } else {
+                 // This case should ideally not happen if loadDailyPlannerData handles the reset correctly,
+                 // but as a fallback, add a new entry.
+                dailyPlannerData.dailyReflections.push({
+                    date: today,
+                    productivity: productivity,
+                    distractions: distractions,
+                    mood: mood
+                });
+            }
+
+            saveDailyPlannerData();
+
+            // Provide tips based on productivity
+            let tipsMessage = '';
+            if (productivity < 50) {
+                tipsMessage = "It looks like you had a challenging day. Don't worry, every day is a new chance! Try breaking tasks into smaller steps tomorrow, or identify your biggest distraction and try to minimize it.";
+            } else if (productivity >= 50 && productivity < 80) {
+                tipsMessage = "Good job today! You're making solid progress. To boost your productivity even further, consider using the Pomodoro Timer more consistently or tackling your most important tasks first.";
+            } else {
+                tipsMessage = "Fantastic work! Your productivity is soaring! Keep up the great habits. Perhaps explore new study techniques or reward yourself for your achievements.";
+            }
+            showMessage(reflectionTipsDiv, 'info', tipsMessage, false);
+            reflectionTipsDiv.classList.remove('hidden');
+
+            // Optionally, automatically close modal after a short delay or require user to click close
+            // For now, let's keep it open until user closes.
+            showMessage(document.getElementById('daily-reflection-message'), 'success', 'Daily reflection saved!', true);
+
+            // Reset tasks for the new day after reflection is submitted
+            dailyPlannerData.plannerTasks = {};
+            dailyPlannerData.unassignedPlannerTasks = [];
+            dailyPlannerData.matrixTasks = [];
+            dailyPlannerData.lastResetDate = new Date().toISOString().split('T')[0]; // Ensure lastResetDate is current day
+            saveDailyPlannerData();
+            renderDailyPlanner();
+            renderUnassignedPlannerTasks();
+            renderEisenhowerMatrix();
+        });
+
+
+        // --- Initial Load & Render ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Apply saved theme on load
+            const savedTheme = localStorage.getItem('theme') || 'dark'; // Default to dark
+            setTheme(savedTheme);
+
+            // Load and render Exam Prep data
+            loadExamPrepData();
+            renderExams();
+            renderTopics();
+            renderBookmarks();
+            updateStudySuggestion();
+            renderCalendar();
+            checkReminders(); // Check reminders on initial load
+
+            // Load and render Study Tracker data
+            loadStudyTrackerData();
+            renderSubjectsDropdown();
+            updateStudyStats();
+            renderStudyLog(); // Initial render of study log list
+
+            // Load daily planner data (including daily reset)
+            loadDailyPlannerData();
+            renderDailyPlanner(); // Render planner grid
+            renderUnassignedPlannerTasks(); // NEW: Render unassigned tasks on load
+            renderEisenhowerMatrix(); // Render Eisenhower matrix
+            renderRewardShop(); // NEW: Render reward shop on load
+            updateCoinsDisplay(); // NEW: Update coins display on load
+
+            // Spinner wheel and chart will be rendered when subject-tracker-view is first navigated to
+            // This prevents chart/spinner issues if the canvas elements aren't visible on DOM load.
+
+            // Determine which dashboard to show on load
+            const lastActiveDashboard = localStorage.getItem('activeDashboard') || 'focus-mood-view';
+            switchDashboard(lastActiveDashboard);
+        });
+
+    </script>
+</body>
+</html>
